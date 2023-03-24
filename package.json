@@ -1,0 +1,42 @@
+{
+  "name": "ts-rest-hono",
+  "description": "Hono integration for @ts-rest",
+  "version": "0.0.1",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pkgroll",
+    "clean": "rimraf dist"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    "require": {
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
+    },
+    "import": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "devDependencies": {
+    "@ts-rest/core": "^3.18.1",
+    "@types/node": "^18.15.6",
+    "hono": "^3.0.2",
+    "pkgroll": "^1.9.0",
+    "rimraf": "^4.4.1",
+    "typescript": "^4"
+  },
+  "peerDependencies": {
+    "hono": "^3.0.2",
+    "zod": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  }
+}
