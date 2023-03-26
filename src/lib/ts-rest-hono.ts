@@ -99,6 +99,7 @@ type Options = {
   logInitialization?: boolean;
   jsonQuery?: boolean;
   responseValidation?: boolean;
+  errorHandler?: (error: unknown) => void;
 };
 
 export const initServer = <Env extends object>() => {
@@ -190,6 +191,9 @@ const transformAppRouteQueryImplementation = (
         `[ts-rest] error processing handler for handler: ${route.name}, path: ${schema.path}`
       );
       console.error(e);
+
+      options.errorHandler?.(e);
+
       return next();
     }
   });
@@ -274,6 +278,9 @@ const transformAppRouteMutationImplementation = (
         `[ts-rest] error processing handler for handler: ${route.name}, path: ${schema.path}`
       );
       console.error(e);
+
+      options.errorHandler?.(e);
+
       return next();
     }
   };
@@ -306,6 +313,7 @@ export const createHonoEndpoints = <
     logInitialization: true,
     jsonQuery: false,
     responseValidation: false,
+    errorHandler: undefined,
   }
 ) => {
   recursivelyApplyHonoRouter(router, [], (route, path) => {
