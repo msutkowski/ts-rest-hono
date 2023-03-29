@@ -14,7 +14,7 @@ import {
   Without,
   ZodInferOrType,
 } from "@ts-rest/core";
-import type { Context, Next, Hono } from "hono";
+import type { Context, Next, Hono, Env as HonoEnv } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
 
@@ -95,12 +95,16 @@ type RecursiveRouterObj<T extends AppRouter, Env extends object> = {
     : never;
 };
 
-type Options = {
+type Options<E extends HonoEnv = HonoEnv> = {
   logInitialization?: boolean;
-  jsonQuery?: boolean;
-  responseValidation?: boolean;
-  errorHandler?: (error: unknown) => void;
+  jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
+  responseValidation?: boolean | ((c: Context<E, any>) => boolean);
+  errorHandler?: (error: unknown, context?: Context<E, any>) => void;
 };
+type ResolvableOption = Options<HonoEnv>[keyof Pick<
+  Options,
+  "responseValidation" | "jsonQuery"
+>];
 
 export const initServer = <Env extends object>() => {
   return {
@@ -128,6 +132,10 @@ const recursivelyApplyHonoRouter = (
   }
 };
 
+function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
+  return typeof option === "function" ? option(c) : option;
+}
+
 const transformAppRouteQueryImplementation = (
   route: AppRouteQueryImplementation<any, any>,
   schema: AppRouteQuery,
@@ -139,7 +147,7 @@ const transformAppRouteQueryImplementation = (
   }
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
-    const query = options.jsonQuery
+    const query = resolveOption(options.jsonQuery, c)
       ? parseJsonQueryObject(c.req.query() as any as Record<string, string>)
       : c.req.query();
 
@@ -169,7 +177,7 @@ const transformAppRouteQueryImplementation = (
       );
       const statusCode = Number(result.status) as StatusCode;
 
-      if (options.responseValidation) {
+      if (resolveOption(options.responseValidation, c)) {
         try {
           const response = validateResponse({
             responseType: schema.responses[statusCode],
@@ -188,11 +196,11 @@ const transformAppRouteQueryImplementation = (
       return c.json(result.body, statusCode);
     } catch (e) {
       console.log(
-        `[ts-rest] error processing handler for handler: ${route.name}, path: ${schema.path}`
+        `[ts-rest] error processing handler for: ${route.name}, path: ${schema.path}`
       );
       console.error(e);
 
-      options.errorHandler?.(e);
+      options.errorHandler?.(e, c);
 
       return next();
     }
@@ -212,7 +220,7 @@ const transformAppRouteMutationImplementation = (
   const method = schema.method;
 
   const reqHandler = async (c: Context, next: Next) => {
-    const query = options.jsonQuery
+    const query = resolveOption(options.jsonQuery, c)
       ? parseJsonQueryObject(c.req.query())
       : c.req.query();
 
@@ -256,7 +264,7 @@ const transformAppRouteMutationImplementation = (
 
       const statusCode = Number(result.status) as StatusCode;
 
-      if (options.responseValidation) {
+      if (resolveOption(options.responseValidation)) {
         try {
           const response = validateResponse({
             responseType: schema.responses[statusCode],
@@ -275,11 +283,11 @@ const transformAppRouteMutationImplementation = (
       return c.json(result.body, statusCode);
     } catch (e) {
       console.log(
-        `[ts-rest] error processing handler for handler: ${route.name}, path: ${schema.path}`
+        `[ts-rest] error processing handler for: ${route.name}, path: ${schema.path}`
       );
       console.error(e);
 
-      options.errorHandler?.(e);
+      options.errorHandler?.(e, c);
 
       return next();
     }
@@ -301,6 +309,8 @@ const transformAppRouteMutationImplementation = (
   }
 };
 
+type ExtractEnv<T> = T extends Hono<infer Env, any> ? Env : never;
+
 export const createHonoEndpoints = <
   T extends RecursiveRouterObj<TRouter, any>,
   TRouter extends AppRouter,
@@ -309,7 +319,7 @@ export const createHonoEndpoints = <
   schema: TRouter,
   router: T,
   app: H,
-  options: Options = {
+  options: Options<ExtractEnv<H>> = {
     logInitialization: true,
     jsonQuery: false,
     responseValidation: false,
@@ -329,14 +339,14 @@ export const createHonoEndpoints = <
           route as AppRouteQueryImplementation<any, any>,
           routerViaPath,
           app,
-          options
+          options as any
         );
       } else {
         transformAppRouteMutationImplementation(
           route,
           routerViaPath,
           app,
-          options
+          options as any
         );
       }
     } else {
