@@ -17,7 +17,6 @@ import {
 import type { Context, Env as HonoEnv, Hono, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
-import { pick } from "./utils";
 
 export function getValue<
   TData,
@@ -270,6 +269,11 @@ const transformAppRouteMutationImplementation = (
         },
         c
       );
+
+      // If someone just calls `return c.(json|jsonT|text)` or returns a `Response` directly, just skip everything else we'd do here as they're taking ownership of the response
+      if (result instanceof Response) {
+        return result;
+      }
 
       const statusCode = Number(result.status) as StatusCode;
 
