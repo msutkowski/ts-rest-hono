@@ -53,7 +53,7 @@ type AppRouteQueryImplementation<
     never
   >,
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>>;
+) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
   T["contentType"] extends "multipart/form-data"
@@ -77,7 +77,9 @@ type AppRouteMutationImplementation<
     never
   >,
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>>;
+) =>
+  | Promise<ApiRouteServerResponse<T["responses"]>>
+  | ReturnType<Context<Env, any>["json"] | Context<Env, any>["text"]>;
 
 type AppRouteImplementation<
   T extends AppRoute,
@@ -176,6 +178,12 @@ const transformAppRouteQueryImplementation = (
         },
         c
       );
+
+      // If someone just calls `return c.(json|jsonT|text)` or returns a `Response` directly, just skip everything else we'd do here as they're taking ownership of the response
+      if (result instanceof Response) {
+        return result;
+      }
+
       const statusCode = Number(result.status) as StatusCode;
 
       if (resolveOption(options.responseValidation, c)) {
