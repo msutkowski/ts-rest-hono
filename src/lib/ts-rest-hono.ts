@@ -41,8 +41,7 @@ export function getValue<
 
 type AppRouteQueryImplementation<
   T extends AppRouteQuery,
-  Env extends HonoEnv,
-  BoundContext extends Context<Env, any> = Context<Env, any>
+  Env extends HonoEnv
 > = (
   input: Without<
     {
@@ -53,7 +52,7 @@ type AppRouteQueryImplementation<
     },
     never
   >,
-  context: Pick<BoundContext, "env" | "get" | "set">
+  context: Context<Env, any>
 ) => Promise<ApiRouteServerResponse<T["responses"]>>;
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
@@ -63,8 +62,7 @@ type WithoutFileIfMultiPart<T extends AppRouteMutation> =
 
 type AppRouteMutationImplementation<
   T extends AppRouteMutation,
-  Env extends HonoEnv,
-  BoundContext extends Context<Env, any> = Context<Env, any>
+  Env extends HonoEnv
 > = (
   input: Without<
     {
@@ -78,7 +76,7 @@ type AppRouteMutationImplementation<
     },
     never
   >,
-  context: Pick<BoundContext, "env" | "get" | "set">
+  context: Context<Env, any>
 ) => Promise<ApiRouteServerResponse<T["responses"]>>;
 
 type AppRouteImplementation<
@@ -176,7 +174,7 @@ const transformAppRouteQueryImplementation = (
           headers: c.req.header(),
           req: c.req.raw,
         },
-        pick(c, ["env", "get", "set"])
+        c
       );
       const statusCode = Number(result.status) as StatusCode;
 
@@ -262,7 +260,7 @@ const transformAppRouteMutationImplementation = (
           file: c.req.file, // TODO: map this?
           req: c.req.raw,
         },
-        pick(c, ["env", "get", "set"])
+        c
       );
 
       const statusCode = Number(result.status) as StatusCode;
