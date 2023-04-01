@@ -14,9 +14,10 @@ import {
   Without,
   ZodInferOrType,
 } from "@ts-rest/core";
-import type { Context, Next, Hono, Env as HonoEnv } from "hono";
+import type { Context, Env as HonoEnv, Hono, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
+import { pick } from "./utils";
 
 export function getValue<
   TData,
@@ -40,7 +41,8 @@ export function getValue<
 
 type AppRouteQueryImplementation<
   T extends AppRouteQuery,
-  Env extends object
+  Env extends HonoEnv,
+  BoundContext extends Context<Env, any> = Context<Env, any>
 > = (
   input: Without<
     {
@@ -51,7 +53,7 @@ type AppRouteQueryImplementation<
     },
     never
   >,
-  env: Env
+  context: Pick<BoundContext, "env" | "get" | "set">
 ) => Promise<ApiRouteServerResponse<T["responses"]>>;
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
@@ -61,7 +63,8 @@ type WithoutFileIfMultiPart<T extends AppRouteMutation> =
 
 type AppRouteMutationImplementation<
   T extends AppRouteMutation,
-  Env extends object
+  Env extends HonoEnv,
+  BoundContext extends Context<Env, any> = Context<Env, any>
 > = (
   input: Without<
     {
@@ -75,19 +78,19 @@ type AppRouteMutationImplementation<
     },
     never
   >,
-  env: Env
+  context: Pick<BoundContext, "env" | "get" | "set">
 ) => Promise<ApiRouteServerResponse<T["responses"]>>;
 
 type AppRouteImplementation<
   T extends AppRoute,
-  Env extends object
+  Env extends HonoEnv
 > = T extends AppRouteMutation
   ? AppRouteMutationImplementation<T, Env>
   : T extends AppRouteQuery
   ? AppRouteQueryImplementation<T, Env>
   : never;
 
-type RecursiveRouterObj<T extends AppRouter, Env extends object> = {
+type RecursiveRouterObj<T extends AppRouter, Env extends HonoEnv> = {
   [TKey in keyof T]: T[TKey] extends AppRouter
     ? RecursiveRouterObj<T[TKey], Env>
     : T[TKey] extends AppRoute
@@ -106,7 +109,7 @@ type ResolvableOption = Options<HonoEnv>[keyof Pick<
   "responseValidation" | "jsonQuery"
 >];
 
-export const initServer = <Env extends object>() => {
+export const initServer = <Env extends HonoEnv>() => {
   return {
     router: <T extends AppRouter>(
       router: T,
@@ -173,7 +176,7 @@ const transformAppRouteQueryImplementation = (
           headers: c.req.header(),
           req: c.req.raw,
         },
-        c.env
+        pick(c, ["env", "get", "set"])
       );
       const statusCode = Number(result.status) as StatusCode;
 
@@ -259,7 +262,7 @@ const transformAppRouteMutationImplementation = (
           file: c.req.file, // TODO: map this?
           req: c.req.raw,
         },
-        c.env
+        pick(c, ["env", "get", "set"])
       );
 
       const statusCode = Number(result.status) as StatusCode;
@@ -336,7 +339,7 @@ export const createHonoEndpoints = <
     if (isAppRoute(routerViaPath)) {
       if (routerViaPath.method === "GET") {
         transformAppRouteQueryImplementation(
-          route as AppRouteQueryImplementation<any, any>,
+          route as AppRouteQueryImplementation<any, ExtractEnv<H>>,
           routerViaPath,
           app,
           options as any

@@ -6,13 +6,18 @@ import { z } from "zod";
 export type Bindings = {
   ENABLE_RESPONSE_VALIDATION: boolean;
 };
-const app = new Hono<{ Bindings: Bindings }>();
+export type Variables = {
+  auth_token?: string;
+};
+
+type HonoEnv = { Bindings: Bindings; Variables: Variables };
+const app = new Hono<HonoEnv>();
 
 // Type tests
 
 const c = initContract();
 
-const server = initServer<Bindings>();
+const server = initServer<HonoEnv>();
 
 export const router = c.router({
   getThing: {
@@ -29,8 +34,12 @@ export const router = c.router({
 });
 
 const handlers = server.router(router, {
-  getThing: async ({ params: { id } }, env) => {
-    console.log(env.ENABLE_RESPONSE_VALIDATION);
+  getThing: async ({ params: { id } }, c) => {
+    c.get("auth_token");
+    console.log(c.env.ENABLE_RESPONSE_VALIDATION);
+    c.set("auth_token", "lul");
+    // @ts-expect-error
+    c.set("missing", 1);
     return {
       status: 200,
       body: {
