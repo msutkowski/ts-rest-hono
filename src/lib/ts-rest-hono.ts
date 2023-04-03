@@ -87,7 +87,7 @@ type AppRouteImplementation<
   ? AppRouteQueryImplementation<T, Env>
   : never;
 
-type RecursiveRouterObj<T extends AppRouter, Env extends HonoEnv> = {
+export type RecursiveRouterObj<T extends AppRouter, Env extends HonoEnv> = {
   [TKey in keyof T]: T[TKey] extends AppRouter
     ? RecursiveRouterObj<T[TKey], Env>
     : T[TKey] extends AppRoute
