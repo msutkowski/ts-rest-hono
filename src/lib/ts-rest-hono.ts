@@ -76,9 +76,7 @@ type AppRouteMutationImplementation<
     never
   >,
   context: Context<Env, any>
-) =>
-  | Promise<ApiRouteServerResponse<T["responses"]>>
-  | ReturnType<Context<Env, any>["json"] | Context<Env, any>["text"]>;
+) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
 
 type AppRouteImplementation<
   T extends AppRoute,
