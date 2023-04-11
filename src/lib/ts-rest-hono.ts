@@ -13,8 +13,10 @@ import {
   validateResponse,
   Without,
   ZodInferOrType,
+  ZodInputOrType,
 } from "@ts-rest/core";
 import type { Context, Env as HonoEnv, Hono, Next } from "hono";
+import { TypedResponse } from "hono/dist/types/types";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
 
@@ -52,7 +54,15 @@ type AppRouteQueryImplementation<
     never
   >,
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
+) =>
+  | Promise<ApiRouteServerResponse<T["responses"]>>
+  | HonoHandlerApiRouteServerResponse<T["responses"]>;
+
+export type HonoHandlerApiRouteServerResponse<
+  T extends Record<number, unknown>
+> = {
+  [K in keyof T]: TypedResponse<ZodInputOrType<T[K]>>;
+}[keyof T];
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
   T["contentType"] extends "multipart/form-data"
@@ -136,6 +146,17 @@ function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
   return typeof option === "function" ? option(c) : option;
 }
 
+const isApiRouteResponse = (
+  result: any
+): result is ApiRouteServerResponse<any> => {
+  return (
+    typeof result === "object" &&
+    "status" in result &&
+    "body" in result &&
+    Object.keys(result).length === 2
+  );
+};
+
 const transformAppRouteQueryImplementation = (
   route: AppRouteQueryImplementation<any, any>,
   schema: AppRouteQuery,
@@ -179,6 +200,12 @@ const transformAppRouteQueryImplementation = (
       // If someone just calls `return c.(json|jsonT|text)` or returns a `Response` directly, just skip everything else we'd do here as they're taking ownership of the response
       if (result instanceof Response) {
         return result;
+      }
+
+      if (!isApiRouteResponse(result)) {
+        throw Error(
+          "Unknown return type. You can either return {status, body} or `jsonT`"
+        );
       }
 
       const statusCode = Number(result.status) as StatusCode;
@@ -354,7 +381,7 @@ export const createHonoEndpoints = <
         );
       } else {
         transformAppRouteMutationImplementation(
-          route,
+          route as AppRouteMutationImplementation<any, ExtractEnv<H>>,
           routerViaPath,
           app,
           options as any

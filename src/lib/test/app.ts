@@ -71,12 +71,16 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   },
   getEarlyReturn: (_, c) => {
     c.set("auth_token", "lul");
-    return c.json({
+    const thing = c.jsonT({
       id: "early",
+      banana: "ExtraKeysAreFine",
+      thing: 1,
       env: c.env,
       auth_token: c.get("auth_token"),
-      status: "ok",
+      status: "ok", // Error because ok is missing
     });
+
+    return thing;
   },
 };
 
