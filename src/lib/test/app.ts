@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import {
   createHonoEndpoints,
   initServer,
-  RecursiveRouterObj,
+  type RecursiveRouterObj,
 } from "../ts-rest-hono";
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
