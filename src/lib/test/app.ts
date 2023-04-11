@@ -1,5 +1,9 @@
 import { Hono } from "hono";
-import { createHonoEndpoints, initServer } from "../ts-rest-hono";
+import {
+  createHonoEndpoints,
+  initServer,
+  type RecursiveRouterObj,
+} from "../ts-rest-hono";
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
 
@@ -48,7 +52,7 @@ export const router = c.router({
   },
 });
 
-const handlers = server.router(router, {
+const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   getThing: async ({ params: { id } }, c) => {
     const auth_token = c.get("auth_token");
     console.log(c.env.ENABLE_RESPONSE_VALIDATION);
@@ -74,7 +78,9 @@ const handlers = server.router(router, {
       status: "ok",
     });
   },
-});
+};
+
+const handlers = server.router(router, args);
 
 createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
