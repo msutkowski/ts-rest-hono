@@ -95,7 +95,7 @@ export type RecursiveRouterObj<T extends AppRouter, Env extends HonoEnv> = {
     : never;
 };
 
-type Options<E extends HonoEnv = HonoEnv> = {
+export type Options<E extends HonoEnv = HonoEnv> = {
   logInitialization?: boolean;
   jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
   responseValidation?: boolean | ((c: Context<E, any>) => boolean);
@@ -322,6 +322,8 @@ const transformAppRouteMutationImplementation = (
 
 type ExtractEnv<T> = T extends Hono<infer Env, any> ? Env : never;
 
+export type CreateHonoEndpointsOptions<HonoApp> = Options<ExtractEnv<HonoApp>>;
+
 export const createHonoEndpoints = <
   T extends RecursiveRouterObj<TRouter, any>,
   TRouter extends AppRouter,
@@ -330,7 +332,7 @@ export const createHonoEndpoints = <
   schema: TRouter,
   router: T,
   app: H,
-  options: Options<ExtractEnv<H>> = {
+  options: CreateHonoEndpointsOptions<H> = {
     logInitialization: true,
     jsonQuery: false,
     responseValidation: false,
