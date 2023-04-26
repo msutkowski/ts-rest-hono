@@ -148,8 +148,8 @@ const transformAppRouteQueryImplementation = (
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
     const query = resolveOption(options.jsonQuery, c)
-      ? parseJsonQueryObject(c.req.query() as any as Record<string, string>)
-      : c.req.query();
+      ? parseJsonQueryObject(c.req.queries() as any as Record<string, string>)
+      : c.req.queries();
 
     const queryResult = checkZodSchema(query, schema.query);
 
@@ -228,7 +228,7 @@ const transformAppRouteMutationImplementation = (
   const reqHandler = async (c: Context, next: Next) => {
     const query = resolveOption(options.jsonQuery, c)
       ? parseJsonQueryObject(c.req.query())
-      : c.req.query();
+      : c.req.queries();
 
     const queryResult = checkZodSchema(query, schema.query);
 
