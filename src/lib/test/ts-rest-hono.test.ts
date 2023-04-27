@@ -26,7 +26,7 @@ describe("Wrangler", () => {
     await worker.stop();
   });
 
-  it.only("should return things", async () => {
+  it("should return things", async () => {
     await setupWorker();
 
     const res = await worker.fetch(
