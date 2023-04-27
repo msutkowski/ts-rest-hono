@@ -100,10 +100,19 @@ export type Options<E extends HonoEnv = HonoEnv> = {
   jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
   responseValidation?: boolean | ((c: Context<E, any>) => boolean);
   errorHandler?: (error: unknown, context?: Context<E, any>) => void;
+
+  // TODO: the only other way to make this work is to patch types for ts-rest/core
+  // and allow for this to be defined on the schema?
+  // In general, arrayQueriesKeys doesn't make sense in `createHonoEndpoints`. typically,
+  // you know if you're using arrayBrackets on an API or not at the parent level though.
+  arrayQueriesKeys?: (c: Context<E, any>) => string[];
+  useQueriesForArrayBracketQueryParams?:
+    | boolean
+    | ((c: Context<E, any>) => boolean);
 };
 type ResolvableOption = Options<HonoEnv>[keyof Pick<
   Options,
-  "responseValidation" | "jsonQuery"
+  "responseValidation" | "jsonQuery" | "useQueriesForArrayBracketQueryParams"
 >];
 
 export const initServer = <Env extends HonoEnv>() => {
@@ -143,13 +152,30 @@ const transformAppRouteQueryImplementation = (
   options: Options
 ) => {
   if (options.logInitialization) {
-    console.log(`[ts-rest] Initialized ${schema.method} ${schema.path}`);
+    console.log(`[ts-rest] Initialized ${schema.method} ${schema.path}`, route);
   }
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
     const query = resolveOption(options.jsonQuery, c)
-      ? parseJsonQueryObject(c.req.queries() as any as Record<string, string>)
-      : c.req.queries();
+      ? parseJsonQueryObject(c.req.query() as any as Record<string, string>)
+      : c.req.query();
+
+    const resolvedQueryKeys = options.arrayQueriesKeys?.(c);
+
+    if (resolveOption(options.useQueriesForArrayBracketQueryParams, c)) {
+      for (const key in query) {
+        if (key.endsWith("[]")) {
+          query[key] = c.req.queries(key);
+        }
+      }
+    }
+    if (Array.isArray(resolvedQueryKeys)) {
+      for (const key in query) {
+        if (resolvedQueryKeys?.includes(key)) {
+          query[key] = c.req.queries(key);
+        }
+      }
+    }
 
     const queryResult = checkZodSchema(query, schema.query);
 
@@ -228,7 +254,24 @@ const transformAppRouteMutationImplementation = (
   const reqHandler = async (c: Context, next: Next) => {
     const query = resolveOption(options.jsonQuery, c)
       ? parseJsonQueryObject(c.req.query())
-      : c.req.queries();
+      : c.req.query();
+
+    const resolvedQueryKeys = options.arrayQueriesKeys?.(c);
+
+    if (resolveOption(options.useQueriesForArrayBracketQueryParams, c)) {
+      for (const key in query) {
+        if (key.endsWith("[]")) {
+          query[key] = c.req.queries(key);
+        }
+      }
+    }
+    if (Array.isArray(resolvedQueryKeys)) {
+      for (const key in query) {
+        if (resolvedQueryKeys?.includes(key)) {
+          query[key] = c.req.queries(key);
+        }
+      }
+    }
 
     const queryResult = checkZodSchema(query, schema.query);
 
