@@ -138,6 +138,15 @@ function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
   return typeof option === "function" ? option(c) : option;
 }
 
+/**
+ * This function leverages a Zod schema to determine if we should call the
+ * c.queries method for a given key so that we can support arrays.
+ *
+ * @param schema the ts-rest schema
+ * @param query a record of query parameters as parsed by hono c.query
+ * @param c hono context
+ * @returns object
+ */
 function maybeTransformQueryFromSchema(
   schema: AppRouteQuery | AppRouteMutation,
   query: Record<string, any>,
