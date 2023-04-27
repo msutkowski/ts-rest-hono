@@ -1,26 +1,37 @@
-import { it, expect, beforeAll, describe, afterAll } from "vitest";
+import { it, expect, describe, afterAll } from "vitest";
+import type { UnstableDevOptions } from "wrangler";
 
 import { unstable_dev } from "wrangler";
 import type { UnstableDevWorker } from "wrangler";
 
-describe("Wrangler", () => {
-  let worker: UnstableDevWorker;
+let worker: UnstableDevWorker;
 
-  beforeAll(async () => {
-    worker = await unstable_dev(__dirname + "/app.ts", {
-      vars: {
-        ENABLE_RESPONSE_VALIDATION: "true",
-      },
-      experimental: { disableExperimentalWarning: true },
-    });
+const setupWorker = async (options: UnstableDevOptions = {}) => {
+  worker = await unstable_dev(__dirname + "/app.ts", {
+    ...options,
+    vars: {
+      ENABLE_RESPONSE_VALIDATION: "true",
+      ...options.vars,
+    },
+    logLevel: "log",
+    experimental: {
+      disableExperimentalWarning: true,
+      ...options.experimental,
+    },
   });
+};
 
+describe("Wrangler", () => {
   afterAll(async () => {
     await worker.stop();
   });
 
   it("should return things", async () => {
-    const res = await worker.fetch("/things/12");
+    await setupWorker();
+
+    const res = await worker.fetch(
+      "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
@@ -28,12 +39,58 @@ describe("Wrangler", () => {
           "ENABLE_RESPONSE_VALIDATION": "true",
         },
         "id": "12",
+        "pathParams": {
+          "id": "12",
+        },
+        "rawQueries": {
+          "array": [
+            "1",
+            "2",
+          ],
+          "array_brackets[]": [
+            "1",
+            "2",
+          ],
+          "camelCase": [
+            "b",
+          ],
+          "kebab-case": [
+            "c",
+          ],
+          "not_array": [
+            "1",
+          ],
+          "snake_case": [
+            "a",
+          ],
+        },
+        "rawQuery": {
+          "array": "1",
+          "array_brackets[]": "1",
+          "camelCase": "b",
+          "kebab-case": "c",
+          "not_array": "1",
+          "snake_case": "a",
+        },
         "status": "ok",
+        "validatedQueryParams": {
+          "array": [
+            "1",
+            "2",
+          ],
+          "array_brackets[]": [
+            "1",
+            "2",
+          ],
+          "not_array": "1",
+        },
       }
     `);
   });
 
   it("should let a handler early return from a c.json() call", async () => {
+    await setupWorker();
+
     const res = await worker.fetch("/early");
     const json = await res.json();
 

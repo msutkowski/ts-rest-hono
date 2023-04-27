@@ -6,6 +6,7 @@ import {
 } from "../ts-rest-hono";
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
+import { HTTPException } from "hono/http-exception";
 
 export type Bindings = {
   ENABLE_RESPONSE_VALIDATION: boolean;
@@ -28,12 +29,21 @@ export const router = c.router({
     method: "GET",
     path: "/things/:id",
     summary: "Get inventory facility balances",
+    query: z.object({
+      "array_brackets[]": z.array(z.string()).optional(),
+      not_array: z.string().optional(),
+      array: z.array(z.string()).optional(),
+    }),
     responses: {
       200: z.object({
         id: z.string(),
         env: z.any().optional(),
         auth_token: z.string().optional(),
         status: z.string(),
+        validatedQueryParams: z.any().optional(),
+        rawQuery: z.any().optional(),
+        rawQueries: z.any().optional(),
+        pathParams: z.any().optional(),
       }),
     },
   },
@@ -53,9 +63,10 @@ export const router = c.router({
 });
 
 const args: RecursiveRouterObj<typeof router, HonoEnv> = {
-  getThing: async ({ params: { id } }, c) => {
+  getThing: async ({ params: { id }, query }, c) => {
     const auth_token = c.get("auth_token");
     console.log(c.env.ENABLE_RESPONSE_VALIDATION);
+
     c.set("auth_token", "lul");
     // @ts-expect-error
     c.set("missing", 1);
@@ -66,6 +77,10 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
         env: c.env,
         auth_token,
         status: "ok",
+        validatedQueryParams: query,
+        rawQuery: c.req.query(),
+        rawQueries: c.req.queries(),
+        pathParams: c.req.param(),
       },
     };
   },
@@ -87,6 +102,13 @@ createHonoEndpoints(router, handlers, app, {
   responseValidation(c) {
     return c.env.ENABLE_RESPONSE_VALIDATION;
   },
+});
+
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return err.getResponse();
+  }
+  return c.json({ message: err.message }, 500);
 });
 
 export default app;

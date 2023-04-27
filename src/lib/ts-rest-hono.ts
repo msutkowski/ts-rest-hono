@@ -8,6 +8,7 @@ import {
   checkZodSchema,
   GetFieldType,
   isAppRoute,
+  isZodObject,
   parseJsonQueryObject,
   PathParamsWithCustomValidators,
   validateResponse,
@@ -17,6 +18,7 @@ import {
 import type { Context, Env as HonoEnv, Hono, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
+import { z } from "zod";
 
 export function getValue<
   TData,
@@ -136,6 +138,37 @@ function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
   return typeof option === "function" ? option(c) : option;
 }
 
+/**
+ * This function leverages a Zod schema to determine if we should call the
+ * c.queries method for a given key so that we can support arrays.
+ *
+ * @param schema the ts-rest schema
+ * @param query a record of query parameters as parsed by hono c.query
+ * @param c hono context
+ * @returns object
+ */
+function maybeTransformQueryFromSchema(
+  schema: AppRouteQuery | AppRouteMutation,
+  query: Record<string, any>,
+  c: Context<any>
+) {
+  let result = Object.assign({}, query);
+
+  if (isZodObject(schema.query)) {
+    Object.entries(schema.query.shape).forEach(([key, zodSchema]) => {
+      if (
+        zodSchema instanceof z.ZodArray ||
+        (zodSchema instanceof z.ZodOptional &&
+          zodSchema._def.innerType instanceof z.ZodArray)
+      ) {
+        result[key] = c.req.queries(key);
+      }
+    });
+  }
+
+  return result;
+}
+
 const transformAppRouteQueryImplementation = (
   route: AppRouteQueryImplementation<any, any>,
   schema: AppRouteQuery,
@@ -147,11 +180,14 @@ const transformAppRouteQueryImplementation = (
   }
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
-    const query = resolveOption(options.jsonQuery, c)
-      ? parseJsonQueryObject(c.req.queries() as any as Record<string, string>)
-      : c.req.queries();
+    const isJsonQueryEnabled = resolveOption(options.jsonQuery, c);
+    const query = isJsonQueryEnabled
+      ? parseJsonQueryObject(c.req.query() as any as Record<string, string>)
+      : c.req.query();
 
-    const queryResult = checkZodSchema(query, schema.query);
+    const finalQuery = maybeTransformQueryFromSchema(schema, query, c);
+
+    const queryResult = checkZodSchema(finalQuery, schema.query);
 
     if (!queryResult.success) {
       return c.json(queryResult.error, 400);
@@ -228,9 +264,11 @@ const transformAppRouteMutationImplementation = (
   const reqHandler = async (c: Context, next: Next) => {
     const query = resolveOption(options.jsonQuery, c)
       ? parseJsonQueryObject(c.req.query())
-      : c.req.queries();
+      : c.req.query();
 
-    const queryResult = checkZodSchema(query, schema.query);
+    const finalQuery = maybeTransformQueryFromSchema(schema, query, c);
+
+    const queryResult = checkZodSchema(finalQuery, schema.query);
 
     if (!queryResult.success) {
       return c.json(queryResult.error, 400);
