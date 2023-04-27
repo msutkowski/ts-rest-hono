@@ -1,5 +1,5 @@
 import { it, expect, describe, afterAll } from "vitest";
-import { UnstableDevOptions } from "wrangler";
+import type { UnstableDevOptions } from "wrangler";
 
 import { unstable_dev } from "wrangler";
 import type { UnstableDevWorker } from "wrangler";
@@ -26,38 +26,28 @@ describe("Wrangler", () => {
     await worker.stop();
   });
 
-  it("should return things", async () => {
-    await setupWorker({
-      vars: {
-        USE_QUERIES_FOR_ARRAY_BRACKET_QUERY_PARAMS: "true",
-      },
-    });
+  it.only("should return things", async () => {
+    await setupWorker();
 
     const res = await worker.fetch(
-      "/things/12?array[]=1&array[]=2&snake_case=a&camelCase=b&kebab-case=c"
+      "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
         "env": {
           "ENABLE_RESPONSE_VALIDATION": "true",
-          "USE_QUERIES_FOR_ARRAY_BRACKET_QUERY_PARAMS": "true",
         },
         "id": "12",
         "pathParams": {
           "id": "12",
         },
-        "queryParams": {
-          "array[]": [
+        "rawQueries": {
+          "array": [
             "1",
             "2",
           ],
-          "camelCase": "b",
-          "kebab-case": "c",
-          "snake_case": "a",
-        },
-        "rawQueries": {
-          "array[]": [
+          "array_brackets[]": [
             "1",
             "2",
           ],
@@ -67,17 +57,33 @@ describe("Wrangler", () => {
           "kebab-case": [
             "c",
           ],
+          "not_array": [
+            "1",
+          ],
           "snake_case": [
             "a",
           ],
         },
         "rawQuery": {
-          "array[]": "1",
+          "array": "1",
+          "array_brackets[]": "1",
           "camelCase": "b",
           "kebab-case": "c",
+          "not_array": "1",
           "snake_case": "a",
         },
         "status": "ok",
+        "validatedQueryParams": {
+          "array": [
+            "1",
+            "2",
+          ],
+          "array_brackets[]": [
+            "1",
+            "2",
+          ],
+          "not_array": "1",
+        },
       }
     `);
   });

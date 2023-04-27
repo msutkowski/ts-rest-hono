@@ -8,6 +8,7 @@ import {
   checkZodSchema,
   GetFieldType,
   isAppRoute,
+  isZodObject,
   parseJsonQueryObject,
   PathParamsWithCustomValidators,
   validateResponse,
@@ -17,6 +18,7 @@ import {
 import type { Context, Env as HonoEnv, Hono, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
+import { z } from "zod";
 
 export function getValue<
   TData,
@@ -100,19 +102,10 @@ export type Options<E extends HonoEnv = HonoEnv> = {
   jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
   responseValidation?: boolean | ((c: Context<E, any>) => boolean);
   errorHandler?: (error: unknown, context?: Context<E, any>) => void;
-
-  // TODO: the only other way to make this work is to patch types for ts-rest/core
-  // and allow for this to be defined on the schema?
-  // In general, arrayQueriesKeys doesn't make sense in `createHonoEndpoints`. typically,
-  // you know if you're using arrayBrackets on an API or not at the parent level though.
-  arrayQueriesKeys?: (c: Context<E, any>) => string[];
-  useQueriesForArrayBracketQueryParams?:
-    | boolean
-    | ((c: Context<E, any>) => boolean);
 };
 type ResolvableOption = Options<HonoEnv>[keyof Pick<
   Options,
-  "responseValidation" | "jsonQuery" | "useQueriesForArrayBracketQueryParams"
+  "responseValidation" | "jsonQuery"
 >];
 
 export const initServer = <Env extends HonoEnv>() => {
@@ -145,6 +138,28 @@ function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
   return typeof option === "function" ? option(c) : option;
 }
 
+function maybeTransformQueryFromSchema(
+  schema: AppRouteQuery | AppRouteMutation,
+  query: Record<string, any>,
+  c: Context<any>
+) {
+  let result = Object.assign({}, query);
+
+  if (isZodObject(schema.query)) {
+    Object.entries(schema.query.shape).forEach(([key, zodSchema]) => {
+      if (
+        zodSchema instanceof z.ZodArray ||
+        (zodSchema instanceof z.ZodOptional &&
+          zodSchema._def.innerType instanceof z.ZodArray)
+      ) {
+        result[key] = c.req.queries(key);
+      }
+    });
+  }
+
+  return result;
+}
+
 const transformAppRouteQueryImplementation = (
   route: AppRouteQueryImplementation<any, any>,
   schema: AppRouteQuery,
@@ -152,32 +167,18 @@ const transformAppRouteQueryImplementation = (
   options: Options
 ) => {
   if (options.logInitialization) {
-    console.log(`[ts-rest] Initialized ${schema.method} ${schema.path}`, route);
+    console.log(`[ts-rest] Initialized ${schema.method} ${schema.path}`);
   }
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
-    const query = resolveOption(options.jsonQuery, c)
+    const isJsonQueryEnabled = resolveOption(options.jsonQuery, c);
+    const query = isJsonQueryEnabled
       ? parseJsonQueryObject(c.req.query() as any as Record<string, string>)
       : c.req.query();
 
-    const resolvedQueryKeys = options.arrayQueriesKeys?.(c);
+    const finalQuery = maybeTransformQueryFromSchema(schema, query, c);
 
-    if (resolveOption(options.useQueriesForArrayBracketQueryParams, c)) {
-      for (const key in query) {
-        if (key.endsWith("[]")) {
-          query[key] = c.req.queries(key);
-        }
-      }
-    }
-    if (Array.isArray(resolvedQueryKeys)) {
-      for (const key in query) {
-        if (resolvedQueryKeys?.includes(key)) {
-          query[key] = c.req.queries(key);
-        }
-      }
-    }
-
-    const queryResult = checkZodSchema(query, schema.query);
+    const queryResult = checkZodSchema(finalQuery, schema.query);
 
     if (!queryResult.success) {
       return c.json(queryResult.error, 400);
@@ -256,24 +257,9 @@ const transformAppRouteMutationImplementation = (
       ? parseJsonQueryObject(c.req.query())
       : c.req.query();
 
-    const resolvedQueryKeys = options.arrayQueriesKeys?.(c);
+    const finalQuery = maybeTransformQueryFromSchema(schema, query, c);
 
-    if (resolveOption(options.useQueriesForArrayBracketQueryParams, c)) {
-      for (const key in query) {
-        if (key.endsWith("[]")) {
-          query[key] = c.req.queries(key);
-        }
-      }
-    }
-    if (Array.isArray(resolvedQueryKeys)) {
-      for (const key in query) {
-        if (resolvedQueryKeys?.includes(key)) {
-          query[key] = c.req.queries(key);
-        }
-      }
-    }
-
-    const queryResult = checkZodSchema(query, schema.query);
+    const queryResult = checkZodSchema(finalQuery, schema.query);
 
     if (!queryResult.success) {
       return c.json(queryResult.error, 400);

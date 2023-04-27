@@ -10,7 +10,6 @@ import { HTTPException } from "hono/http-exception";
 
 export type Bindings = {
   ENABLE_RESPONSE_VALIDATION: boolean;
-  USE_QUERIES_FOR_ARRAY_BRACKET_QUERY_PARAMS: boolean;
 };
 export type Variables = {
   auth_token?: string;
@@ -30,13 +29,18 @@ export const router = c.router({
     method: "GET",
     path: "/things/:id",
     summary: "Get inventory facility balances",
+    query: z.object({
+      "array_brackets[]": z.array(z.string()).optional(),
+      not_array: z.string().optional(),
+      array: z.array(z.string()).optional(),
+    }),
     responses: {
       200: z.object({
         id: z.string(),
         env: z.any().optional(),
         auth_token: z.string().optional(),
         status: z.string(),
-        queryParams: z.any().optional(),
+        validatedQueryParams: z.any().optional(),
         rawQuery: z.any().optional(),
         rawQueries: z.any().optional(),
         pathParams: z.any().optional(),
@@ -73,7 +77,7 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
         env: c.env,
         auth_token,
         status: "ok",
-        queryParams: query,
+        validatedQueryParams: query,
         rawQuery: c.req.query(),
         rawQueries: c.req.queries(),
         pathParams: c.req.param(),
@@ -97,9 +101,6 @@ createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
   responseValidation(c) {
     return c.env.ENABLE_RESPONSE_VALIDATION;
-  },
-  useQueriesForArrayBracketQueryParams(c) {
-    return c.env.USE_QUERIES_FOR_ARRAY_BRACKET_QUERY_PARAMS;
   },
 });
 
