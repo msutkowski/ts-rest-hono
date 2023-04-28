@@ -161,7 +161,7 @@ function maybeTransformQueryFromSchema(
         (zodSchema instanceof z.ZodOptional &&
           zodSchema._def.innerType instanceof z.ZodArray)
       ) {
-        result[key] = c.req.queries(key);
+        result[key] = c.req.queries(encodeURI(key));
       }
     });
   }
