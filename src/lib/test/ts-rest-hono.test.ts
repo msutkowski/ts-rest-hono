@@ -30,7 +30,9 @@ describe("Wrangler", () => {
     await setupWorker();
 
     const res = await worker.fetch(
-      "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
+      encodeURI(
+        "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
+      )
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchInlineSnapshot(`
@@ -47,7 +49,7 @@ describe("Wrangler", () => {
             "1",
             "2",
           ],
-          "array_brackets[]": [
+          "array_brackets%5B%5D": [
             "1",
             "2",
           ],
@@ -66,7 +68,7 @@ describe("Wrangler", () => {
         },
         "rawQuery": {
           "array": "1",
-          "array_brackets[]": "1",
+          "array_brackets%5B%5D": "1",
           "camelCase": "b",
           "kebab-case": "c",
           "not_array": "1",

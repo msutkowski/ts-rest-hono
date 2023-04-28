@@ -161,7 +161,11 @@ function maybeTransformQueryFromSchema(
         (zodSchema instanceof z.ZodOptional &&
           zodSchema._def.innerType instanceof z.ZodArray)
       ) {
-        result[key] = c.req.queries(key);
+        // If you have array brackets in a schema as a key, it's not safe to just call key
+        // being that anything in c.req.queries will be encoded and we should assume that we'll
+        // need to encode the key. This is really only a thing to worry about if there are special
+        // characters in a key.
+        result[key] = c.req.queries(encodeURI(key));
       }
     });
   }
