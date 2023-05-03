@@ -3,7 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@ts-rest/core': ^3.18.1
   '@types/node': ^18.15.6
-  hono: ^3.0.2
+  hono: ^3.1.8
   pkgroll: ^1.9.0
   rimraf: ^4.4.1
   typescript: ^4
@@ -14,7 +14,7 @@ specifiers:
 devDependencies:
   '@ts-rest/core': 3.18.1_zod@3.21.4
   '@types/node': 18.15.6
-  hono: 3.1.2
+  hono: 3.1.8
   pkgroll: 1.9.0_typescript@4.9.5
   rimraf: 4.4.1
   typescript: 4.9.5
@@ -1158,8 +1158,8 @@ packages:
       function-bind: 1.1.1
     dev: true
 
-  /hono/3.1.2:
-    resolution: {integrity: sha512-keNMGSlBX2VbwD5gF10Xu0zuUm9mTy1HWctIhuom8FJEJY6aKo1Bb/vQXTEjBupKDG7MJi2aG05YMo01GjkMQA==}
+  /hono/3.1.8:
+    resolution: {integrity: sha512-7UZQWuQaqn8MENla09Jdb28qiR5uXii4xR/TNQuVNxZ3+T+ZixWiQUpJG85BXNqhJ5s1SkPbLGjbc3L5wKsv5g==}
     engines: {node: '>=16.0.0'}
     dev: true
 

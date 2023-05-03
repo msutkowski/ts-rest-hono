@@ -49,7 +49,7 @@ describe("Wrangler", () => {
             "1",
             "2",
           ],
-          "array_brackets%5B%5D": [
+          "array_brackets[]": [
             "1",
             "2",
           ],
@@ -68,7 +68,7 @@ describe("Wrangler", () => {
         },
         "rawQuery": {
           "array": "1",
-          "array_brackets%5B%5D": "1",
+          "array_brackets[]": "1",
           "camelCase": "b",
           "kebab-case": "c",
           "not_array": "1",
