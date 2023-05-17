@@ -47,6 +47,19 @@ export const router = c.router({
       }),
     },
   },
+  getSyncReturn: {
+    method: "GET",
+    path: "/sync",
+    summary: "Sometimes you don't need to wait",
+    responses: {
+      200: z.object({
+        id: z.string(),
+        env: z.any().optional(),
+        auth_token: z.string().optional(),
+        status: z.string(),
+      }),
+    },
+  },
   getEarlyReturn: {
     method: "GET",
     path: "/early",
@@ -81,6 +94,18 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
         rawQuery: c.req.query(),
         rawQueries: c.req.queries(),
         pathParams: c.req.param(),
+      },
+    };
+  },
+  getSyncReturn: (_, c) => {
+    c.set("auth_token", "lul");
+    return {
+      status: 200,
+      body: {
+        id: "sync",
+        env: c.env,
+        auth_token: c.get("auth_token"),
+        status: "ok",
       },
     };
   },

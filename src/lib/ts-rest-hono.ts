@@ -40,6 +40,9 @@ export function getValue<
   return value !== undefined ? value : (defaultValue as TDefault);
 }
 
+type AppRouteImplementationReturn<T extends AppRouteQuery | AppRouteMutation> =
+  Promise<ApiRouteServerResponse<T["responses"]>> | ApiRouteServerResponse<T["responses"]> | Response;
+
 type AppRouteQueryImplementation<
   T extends AppRouteQuery,
   Env extends HonoEnv
@@ -54,7 +57,7 @@ type AppRouteQueryImplementation<
     never
   >,
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
+) => AppRouteImplementationReturn<T>;
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
   T["contentType"] extends "multipart/form-data"
@@ -78,7 +81,7 @@ type AppRouteMutationImplementation<
     never
   >,
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
+) => AppRouteImplementationReturn<T>;
 
 type AppRouteImplementation<
   T extends AppRoute,

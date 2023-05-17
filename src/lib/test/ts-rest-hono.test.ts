@@ -90,6 +90,24 @@ describe("Wrangler", () => {
     `);
   });
 
+  it("should let a handler synchronously return", async () => {
+    await setupWorker();
+
+    const res = await worker.fetch("/sync");
+    const json = await res.json();
+
+    expect(json).toMatchInlineSnapshot(`
+      {
+        "auth_token": "lul",
+        "env": {
+          "ENABLE_RESPONSE_VALIDATION": "true",
+        },
+        "id": "sync",
+        "status": "ok",
+      }
+    `);
+  });
+
   it("should let a handler early return from a c.json() call", async () => {
     await setupWorker();
 
