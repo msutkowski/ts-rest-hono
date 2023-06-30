@@ -7,6 +7,7 @@ import {
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
 import { HTTPException } from "hono/http-exception";
+import { formatZodErrors } from "./format-errors";
 
 export type Bindings = {
   ENABLE_RESPONSE_VALIDATION: boolean;
@@ -60,6 +61,53 @@ export const router = c.router({
       }),
     },
   },
+  createThing: {
+    method: "POST",
+    path: "/things",
+    summary: "Create a thing",
+    body: z.object({
+      data: z.array(
+        z.object({
+          name: z.string(),
+          other: z.number(),
+        })
+      ),
+    }),
+    responses: {
+      200: z.object({
+        ok: z.boolean(),
+      }),
+      400: z.object({
+        message: z.string(),
+        banana: z.string(),
+      }),
+    },
+  },
+});
+
+export const createRouter = c.router({
+  createThing: {
+    method: "POST",
+    path: "/things",
+    summary: "Create a thing",
+    body: z.object({
+      data: z.array(
+        z.object({
+          name: z.string(),
+          other: z.number(),
+        })
+      ),
+    }),
+    responses: {
+      200: z.object({
+        ok: z.boolean(),
+      }),
+      400: z.object({
+        message: z.string(),
+        banana: z.string(),
+      }),
+    },
+  },
 });
 
 const args: RecursiveRouterObj<typeof router, HonoEnv> = {
@@ -93,6 +141,9 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
       status: "ok",
     });
   },
+  createThing: async (_, c) => {
+    return { status: 200, body: { ok: true } };
+  },
 };
 
 const handlers = server.router(router, args);
@@ -101,6 +152,9 @@ createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
   responseValidation(c) {
     return c.env.ENABLE_RESPONSE_VALIDATION;
+  },
+  zodErrorHandler(error) {
+    return { error: formatZodErrors(error), status: 400 };
   },
 });
 

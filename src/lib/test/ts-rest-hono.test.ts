@@ -107,4 +107,27 @@ describe("Wrangler", () => {
       }
     `);
   });
+
+  it("should support zodErrorTransformer", async () => {
+    await setupWorker();
+
+    const res = await worker.fetch("/things", {
+      method: "POST",
+      body: JSON.stringify({ bad: "key" }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchInlineSnapshot(`
+      {
+        "errors": [
+          {
+            "detail": "invalid_type",
+            "source": {
+              "pointer": "/data",
+            },
+            "title": "Required",
+          },
+        ],
+      }
+    `);
+  });
 });

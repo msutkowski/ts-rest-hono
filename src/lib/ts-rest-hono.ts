@@ -102,6 +102,10 @@ export type Options<E extends HonoEnv = HonoEnv> = {
   jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
   responseValidation?: boolean | ((c: Context<E, any>) => boolean);
   errorHandler?: (error: unknown, context?: Context<E, any>) => void;
+  zodErrorHandler?: (error: z.ZodError<any>) => {
+    error: unknown;
+    status: StatusCode;
+  };
 };
 type ResolvableOption = Options<HonoEnv>[keyof Pick<
   Options,
@@ -191,6 +195,10 @@ const transformAppRouteQueryImplementation = (
     const queryResult = checkZodSchema(finalQuery, schema.query);
 
     if (!queryResult.success) {
+      if (options.zodErrorHandler) {
+        const { error, status } = options.zodErrorHandler(queryResult.error);
+        return c.json(error, status);
+      }
       return c.json(queryResult.error, 400);
     }
 
@@ -199,6 +207,10 @@ const transformAppRouteQueryImplementation = (
     });
 
     if (!paramsResult.success) {
+      if (options.zodErrorHandler) {
+        const { error, status } = options.zodErrorHandler(paramsResult.error);
+        return c.json(error, status);
+      }
       return c.json(paramsResult.error, 400);
     }
 
@@ -232,6 +244,13 @@ const transformAppRouteQueryImplementation = (
 
           return c.json(response.body, statusCode);
         } catch (err) {
+          if (err instanceof z.ZodError) {
+            if (options.zodErrorHandler) {
+              const { error, status } = options.zodErrorHandler(err);
+              return c.json(error, status);
+            }
+          }
+
           return c.json(err, 400);
         }
       }
@@ -272,12 +291,20 @@ const transformAppRouteMutationImplementation = (
     const queryResult = checkZodSchema(finalQuery, schema.query);
 
     if (!queryResult.success) {
+      if (options.zodErrorHandler) {
+        const { error, status } = options.zodErrorHandler(queryResult.error);
+        return c.json(error, status);
+      }
       return c.json(queryResult.error, 400);
     }
 
     const bodyResult = checkZodSchema(await c.req.json(), schema.body);
 
     if (!bodyResult.success) {
+      if (options.zodErrorHandler) {
+        const { error, status } = options.zodErrorHandler(bodyResult.error);
+        return c.json(error, status);
+      }
       return c.json(bodyResult.error, 400);
     }
 
@@ -286,6 +313,10 @@ const transformAppRouteMutationImplementation = (
     });
 
     if (!paramsResult.success) {
+      if (options.zodErrorHandler) {
+        const { error, status } = options.zodErrorHandler(paramsResult.error);
+        return c.json(error, status);
+      }
       return c.json(paramsResult.error, 400);
     }
 
@@ -326,6 +357,13 @@ const transformAppRouteMutationImplementation = (
 
           return c.json(response.body, statusCode);
         } catch (err) {
+          if (err instanceof z.ZodError) {
+            if (options.zodErrorHandler) {
+              const { error, status } = options.zodErrorHandler(err);
+              return c.json(error, status);
+            }
+          }
+
           return c.json(err, 400);
         }
       }
