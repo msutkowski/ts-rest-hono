@@ -8,6 +8,7 @@
   "scripts": {
     "build": "pkgroll",
     "clean": "rimraf dist",
+    "denoify": "rimraf deno_dist && denoify && rimraf 'deno_dist/lib/test'",
     "test": "vitest"
   },
   "main": "./dist/index.cjs",
