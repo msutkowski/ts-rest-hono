@@ -26,6 +26,7 @@
   "devDependencies": {
     "@ts-rest/core": "^3.27.0",
     "@types/node": "^18.15.6",
+    "denoify": "^1.6.1",
     "hono": "^3.4.0",
     "pkgroll": "^1.9.0",
     "rimraf": "^4.4.1",
