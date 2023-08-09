@@ -73,7 +73,7 @@ type AppRouteMutationImplementation<
   context: Context<Env, any>
 ) => Promise<ServerInferResponses<T>> | Response;
 
-type AppRouteImplementation<
+export type AppRouteImplementation<
   T extends AppRoute,
   Env extends HonoEnv
 > = T extends AppRouteMutation
