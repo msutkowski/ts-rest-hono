@@ -83,6 +83,17 @@ export const router = c.router({
       }),
     },
   },
+  headersRequired: {
+    method: "GET",
+    path: "/headers",
+    summary: "Get a thing but headers are required",
+    headers: z.object({
+      "x-thing": z.string(),
+    }),
+    responses: {
+      200: z.literal("ok"),
+    },
+  },
 });
 
 export const createRouter = c.router({
@@ -143,6 +154,9 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   },
   createThing: async (_, c) => {
     return { status: 200, body: { ok: true } };
+  },
+  headersRequired: async (_, c) => {
+    return { status: 200, body: "ok" };
   },
 };
 
