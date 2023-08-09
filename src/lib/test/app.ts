@@ -151,11 +151,23 @@ const handlers = server.router(router, args);
 createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
   responseValidation(c) {
-    return c.env.ENABLE_RESPONSE_VALIDATION;
+    return c.env.ENABLE_RESPONSE_VALIDATION
   },
-  zodErrorHandler(error) {
-    return { error: formatZodErrors(error), status: 400 };
-  },
+  requestValidationErrorHandler: ({ body, headers, query, pathParams }) => ({
+    error: {
+      errors: {
+        body: body ? formatZodErrors(body) : null,
+        headers: headers ? formatZodErrors(headers) : null,
+        query: query ? formatZodErrors(query) : null,
+        pathParams: pathParams ? formatZodErrors(pathParams) : null,
+      },
+    },
+    status: 400,
+  }),
+  responseValidationErrorHandler: (error) => ({
+    error: formatZodErrors(error),
+    status: 400,
+  }),
 });
 
 app.onError((err, c) => {

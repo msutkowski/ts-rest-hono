@@ -118,15 +118,20 @@ describe("Wrangler", () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
-        "errors": [
-          {
-            "detail": "invalid_type",
-            "source": {
-              "pointer": "/data",
+        "errors": {
+          "body": [
+            {
+              "detail": "invalid_type",
+              "source": {
+                "pointer": "/data",
+              },
+              "title": "Required",
             },
-            "title": "Required",
-          },
-        ],
+          ],
+          "headers": null,
+          "pathParams": null,
+          "query": null,
+        },
       }
     `);
   });
