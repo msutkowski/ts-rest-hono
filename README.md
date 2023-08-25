@@ -82,9 +82,10 @@ type Todo = {
   completed: boolean;
 };
 
+// Database
 const todos: Todo[] = [];
 
-const router = s.router(contract, {
+export const router = s.router(contract, {
   getTodos: async () => {
     return {
       status: 201,
@@ -106,8 +107,6 @@ const router = s.router(contract, {
     };
   },
 });
-
-export default router;
 ```
 
 #### 3. Create Endpoints on App.
@@ -118,7 +117,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { createHonoEndpoints } from "ts-rest-hono";
 import { contract } from "./contract";
-import router from "./router";
+import { router } from "./router";
 
 const app = new Hono();
 
