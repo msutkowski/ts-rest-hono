@@ -1,13 +1,17 @@
 # ts-rest-hono
 
-<p align="center">A 🔥 hono adapter for <a href="https://www.ts-rest.com">ts-rest</a></p>
+<p align="center">🔥 A <a href="https://hono.dev/">hono</a> adapter for <a href="https://www.ts-rest.com">ts-rest 🔥</a></p>
 
 <p align="center">
- <img src="https://avatars.githubusercontent.com/u/109956939?s=400&u=8bf67b1281da46d64eab85f48255cd1892bf0885&v=4" height="150"></img>
- <img src="https://avatars.githubusercontent.com/u/98495527?s=400&v=4" height="150">
+  <a href="https://www.ts-rest.com">
+    <img src="https://avatars.githubusercontent.com/u/109956939?s=400&u=8bf67b1281da46d64eab85f48255cd1892bf0885&v=4" height="150"></img>
+  </a>
+  <a href="https://hono.dev">
+    <img src="https://avatars.githubusercontent.com/u/98495527?s=400&v=4" height="150">
+  </a>
 </p>
 
-<p align="center">Incrementally adoptable RPC-like client and server helpers for a magical end to end typed experience. + The small, simple, and ultrafast web framework for the Edges 🔥.</p>
+<p align="center">Incrementally adoptable RPC-like client and server helpers for a magical end to end typed experience + The small, simple, and ultrafast web framework for the Edges.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/ts-rest-hono">
