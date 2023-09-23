@@ -6,10 +6,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "pkgroll",
+    "build": "pnpm clean && pkgroll",
     "clean": "rimraf dist",
     "denoify": "rimraf deno_dist && denoify && rimraf 'deno_dist/lib/test'",
-    "test": "vitest"
+    "test": "vitest",
+    "prerelease": "pnpm denoify && pnpm build",
+    "release": "np"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -29,6 +31,7 @@
     "@types/node": "^18.15.6",
     "denoify": "^1.6.1",
     "hono": "^3.4.0",
+    "np": "^8.0.4",
     "pkgroll": "^1.9.0",
     "rimraf": "^4.4.1",
     "typescript": "^4",
