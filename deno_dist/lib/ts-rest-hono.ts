@@ -4,17 +4,10 @@ import {
   AppRouteMutation,
   AppRouteQuery,
   AppRouter,
-  checkZodSchema,
-  extractZodObjectShape,
-  GetFieldType,
   isAppRoute,
-  isZodObject,
-  parseJsonQueryObject,
   ServerInferRequest,
   ServerInferResponses,
   validateResponse,
-  Without,
-  ZodInferOrType,
 } from "npm:@ts-rest/core@3.27.0";
 import type { Context, Env as HonoEnv, Hono, Next } from "https://deno.land/x/hono@v3.4.0/mod.ts";
 import { StatusCode } from "https://deno.land/x/hono@v3.4.0/utils/http-status.ts";
@@ -23,26 +16,11 @@ import { z } from "https://deno.land/x/zod@v3.21.4/mod.ts";
 import { RequestValidationError } from "./request-validation-error.ts";
 import { combinedRequestValidationErrorHandler } from "./validate-request.ts";
 import { validateRequest } from "./validate-request.ts";
+import { getValue, resolveOption } from "./utils.ts";
 
-export function getValue<
-  TData,
-  TPath extends string,
-  TDefault = GetFieldType<TData, TPath>
->(
-  data: TData,
-  path: TPath,
-  defaultValue?: TDefault
-): GetFieldType<TData, TPath> | TDefault {
-  const value = path
-    .split(/[.[\]]/)
-    .filter(Boolean)
-    .reduce<GetFieldType<TData, TPath>>(
-      (value, key) => (value as any)?.[key],
-      data as any
-    );
-
-  return value !== undefined ? value : (defaultValue as TDefault);
-}
+export type AppRouteImplementationReturn<
+  T extends AppRouteQuery | AppRouteMutation
+> = Promise<ServerInferResponses<T>> | ServerInferResponses<T> | Response;
 
 type AppRouteInput<T extends AppRoute> = ServerInferRequest<
   T,
@@ -55,12 +33,7 @@ type AppRouteQueryImplementation<
 > = (
   input: AppRouteInput<T>,
   context: Context<Env, any>
-) => Promise<ServerInferResponses<T>> | Response;
-
-type WithoutFileIfMultiPart<T extends AppRouteMutation> =
-  T["contentType"] extends "multipart/form-data"
-    ? Without<ZodInferOrType<T["body"]>, File>
-    : ZodInferOrType<T["body"]>;
+) => AppRouteImplementationReturn<T>;
 
 type AppRouteMutationImplementation<
   T extends AppRouteMutation,
@@ -71,7 +44,7 @@ type AppRouteMutationImplementation<
     file: unknown;
   },
   context: Context<Env, any>
-) => Promise<ServerInferResponses<T>> | Response;
+) => AppRouteImplementationReturn<T>;
 
 export type AppRouteImplementation<
   T extends AppRoute,
@@ -104,7 +77,7 @@ export type Options<E extends HonoEnv = HonoEnv> = {
     status: StatusCode;
   };
 };
-type ResolvableOption = Options<HonoEnv>[keyof Pick<
+export type ResolvableOption = Options<HonoEnv>[keyof Pick<
   Options,
   "responseValidation" | "jsonQuery"
 >];
@@ -112,7 +85,7 @@ type ResolvableOption = Options<HonoEnv>[keyof Pick<
 export const initServer = <Env extends HonoEnv>() => {
   return {
     router: <T extends AppRouter>(
-      router: T,
+      _router: T,
       args: RecursiveRouterObj<T, Env>
     ) => args,
   };
@@ -134,47 +107,6 @@ const recursivelyApplyHonoRouter = (
     routeTransformer(router, path);
   }
 };
-
-export function resolveOption(
-  option: ResolvableOption,
-  c: Context<any> = {} as any
-) {
-  return typeof option === "function" ? option(c) : option;
-}
-
-/**
- * This function leverages a Zod schema to determine if we should call the
- * c.queries method for a given key so that we can support arrays.
- *
- * @param schema the ts-rest schema
- * @param query a record of query parameters as parsed by hono c.query
- * @param c hono context
- * @returns object
- */
-export function maybeTransformQueryFromSchema(
-  schema: AppRouteQuery | AppRouteMutation,
-  query: Record<string, any>,
-  c: Context<any>
-) {
-  let result = Object.assign({}, query);
-
-  if (isZodObject(schema.query)) {
-    Object.entries(extractZodObjectShape(schema.query)).forEach(
-      ([key, zodSchema]) => {
-        if (
-          zodSchema instanceof z.ZodArray ||
-          (zodSchema instanceof z.ZodOptional &&
-            zodSchema._def.innerType instanceof z.ZodArray)
-        ) {
-          // We need to call .queries() for known array keys, otherwise they come back as one string even if there are multiple entries
-          result[key] = c.req.queries(key);
-        }
-      }
-    );
-  }
-
-  return result;
-}
 
 const transformAppRouteQueryImplementation = (
   route: AppRouteQueryImplementation<any, any>,

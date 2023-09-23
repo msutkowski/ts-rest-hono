@@ -1,15 +1,9 @@
-import {
-  checkZodSchema,
-  parseJsonQueryObject,
-  type AppRoute,
-} from "@ts-rest/core";
+import { checkZodSchema, parseJsonQueryObject } from "@ts-rest/core";
+import type { AppRoute } from "@ts-rest/core";
 import type { Context } from "hono";
-import {
-  type Options,
-  resolveOption,
-  maybeTransformQueryFromSchema,
-} from "./ts-rest-hono";
+import type { Options } from "./ts-rest-hono";
 import { RequestValidationError } from "./request-validation-error";
+import { maybeTransformQueryFromSchema, resolveOption } from "./utils";
 
 /**
  * @throws - {@link RequestValidationError}

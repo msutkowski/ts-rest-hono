@@ -4,6 +4,8 @@
     "module": "commonjs",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
@@ -15,5 +17,6 @@
     {
       "path": "./tsconfig.lib.json"
     }
-  ]
+  ],
+  "exclude": ["node_modules", "dist", "deno_dist"]
 }
