@@ -9,7 +9,7 @@
     "build": "pnpm clean && pkgroll",
     "clean": "rimraf dist",
     "denoify": "rimraf deno_dist && denoify && rimraf 'deno_dist/lib/test'",
-    "test": "vitest",
+    "test": "vitest --run",
     "prerelease": "pnpm denoify && pnpm build",
     "release": "np"
   },
