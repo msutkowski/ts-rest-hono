@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  ApiRouteServerResponse,
   AppRoute,
   AppRouteMutation,
   AppRouteQuery,
   AppRouter,
   checkZodSchema,
+  extractZodObjectShape,
   GetFieldType,
   isAppRoute,
   isZodObject,
   parseJsonQueryObject,
-  PathParamsWithCustomValidators,
+  ServerInferRequest,
+  ServerInferResponses,
   validateResponse,
   Without,
   ZodInferOrType,
@@ -40,21 +41,18 @@ export function getValue<
   return value !== undefined ? value : (defaultValue as TDefault);
 }
 
+type AppRouteInput<T extends AppRoute> = ServerInferRequest<
+  T,
+  IncomingHttpHeaders
+> & { req: Request };
+
 type AppRouteQueryImplementation<
   T extends AppRouteQuery,
   Env extends HonoEnv
 > = (
-  input: Without<
-    {
-      params: PathParamsWithCustomValidators<T>;
-      query: ZodInferOrType<T["query"]>;
-      headers: IncomingHttpHeaders;
-      req: Request;
-    },
-    never
-  >,
+  input: AppRouteInput<T>,
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
+) => Promise<ServerInferResponses<T>> | Response;
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
   T["contentType"] extends "multipart/form-data"
@@ -65,20 +63,12 @@ type AppRouteMutationImplementation<
   T extends AppRouteMutation,
   Env extends HonoEnv
 > = (
-  input: Without<
-    {
-      params: PathParamsWithCustomValidators<T>;
-      query: ZodInferOrType<T["query"]>;
-      body: WithoutFileIfMultiPart<T>;
-      headers: IncomingHttpHeaders;
-      files: unknown;
-      file: unknown;
-      req: Request;
-    },
-    never
-  >,
+  input: AppRouteInput<T> & {
+    files: unknown;
+    file: unknown;
+  },
   context: Context<Env, any>
-) => Promise<ApiRouteServerResponse<T["responses"]>> | Response;
+) => Promise<ServerInferResponses<T>> | Response;
 
 type AppRouteImplementation<
   T extends AppRoute,
@@ -151,7 +141,7 @@ function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
  * @param c hono context
  * @returns object
  */
-function maybeTransformQueryFromSchema(
+export function maybeTransformQueryFromSchema(
   schema: AppRouteQuery | AppRouteMutation,
   query: Record<string, any>,
   c: Context<any>
@@ -159,16 +149,18 @@ function maybeTransformQueryFromSchema(
   let result = Object.assign({}, query);
 
   if (isZodObject(schema.query)) {
-    Object.entries(schema.query.shape).forEach(([key, zodSchema]) => {
-      if (
-        zodSchema instanceof z.ZodArray ||
-        (zodSchema instanceof z.ZodOptional &&
-          zodSchema._def.innerType instanceof z.ZodArray)
-      ) {
-        // We need to call .queries() for known array keys, otherwise they come back as one string even if there are multiple entries
-        result[key] = c.req.queries(key);
+    Object.entries(extractZodObjectShape(schema.query)).forEach(
+      ([key, zodSchema]) => {
+        if (
+          zodSchema instanceof z.ZodArray ||
+          (zodSchema instanceof z.ZodOptional &&
+            zodSchema._def.innerType instanceof z.ZodArray)
+        ) {
+          // We need to call .queries() for known array keys, otherwise they come back as one string even if there are multiple entries
+          result[key] = c.req.queries(key);
+        }
       }
-    });
+    );
   }
 
   return result;
@@ -217,10 +209,10 @@ const transformAppRouteQueryImplementation = (
     try {
       const result = await route(
         {
-          params: paramsResult.data,
-          query: queryResult.data,
-          headers: c.req.header(),
-          req: c.req.raw,
+          params: paramsResult.data as any,
+          query: queryResult.data as any,
+          headers: c.req.header() as any,
+          req: c.req.raw as any,
         },
         c
       );
@@ -235,7 +227,7 @@ const transformAppRouteQueryImplementation = (
       if (resolveOption(options.responseValidation, c)) {
         try {
           const response = validateResponse({
-            responseType: schema.responses[statusCode],
+            appRoute: schema,
             response: {
               status: statusCode,
               body: result.body,
@@ -323,7 +315,7 @@ const transformAppRouteMutationImplementation = (
     try {
       const result = await route(
         {
-          params: paramsResult.data,
+          params: paramsResult.data as any,
           body: bodyResult.data,
           query: queryResult.data,
           headers: c.req.header(),
@@ -333,7 +325,7 @@ const transformAppRouteMutationImplementation = (
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           file: c.req.file, // TODO: map this?
-          req: c.req.raw,
+          req: c.req.raw as any,
         },
         c
       );
@@ -348,7 +340,7 @@ const transformAppRouteMutationImplementation = (
       if (resolveOption(options.responseValidation)) {
         try {
           const response = validateResponse({
-            responseType: schema.responses[statusCode],
+            appRoute: schema,
             response: {
               status: statusCode,
               body: result.body,

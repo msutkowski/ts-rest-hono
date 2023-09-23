@@ -34,7 +34,7 @@ describe("Wrangler", () => {
         "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
       )
     );
-    expect(res.status).toBe(200);
+    expect.soft(res.status).toBe(200);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
         "env": {
