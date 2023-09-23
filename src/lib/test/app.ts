@@ -83,6 +83,17 @@ export const router = c.router({
       }),
     },
   },
+  headersRequired: {
+    method: "GET",
+    path: "/headers",
+    summary: "Get a thing but headers are required",
+    headers: z.object({
+      "x-thing": z.string(),
+    }),
+    responses: {
+      200: z.literal("ok"),
+    },
+  },
 });
 
 export const createRouter = c.router({
@@ -144,6 +155,9 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   createThing: async (_, c) => {
     return { status: 200, body: { ok: true } };
   },
+  headersRequired: async (_, c) => {
+    return { status: 200, body: "ok" };
+  },
 };
 
 const handlers = server.router(router, args);
@@ -151,11 +165,23 @@ const handlers = server.router(router, args);
 createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
   responseValidation(c) {
-    return c.env.ENABLE_RESPONSE_VALIDATION;
+    return c.env.ENABLE_RESPONSE_VALIDATION
   },
-  zodErrorHandler(error) {
-    return { error: formatZodErrors(error), status: 400 };
-  },
+  requestValidationErrorHandler: ({ body, headers, query, pathParams }) => ({
+    error: {
+      errors: {
+        body: body ? formatZodErrors(body) : null,
+        headers: headers ? formatZodErrors(headers) : null,
+        query: query ? formatZodErrors(query) : null,
+        pathParams: pathParams ? formatZodErrors(pathParams) : null,
+      },
+    },
+    status: 400,
+  }),
+  responseValidationErrorHandler: (error) => ({
+    error: formatZodErrors(error),
+    status: 400,
+  }),
 });
 
 app.onError((err, c) => {

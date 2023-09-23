@@ -16,24 +16,18 @@ export const validationError = z.object({
 
 export type ValidationError = z.infer<typeof validationError>;
 
-export const errorFormat = z.object({
-  errors: z.array(z.union([error, validationError])),
-});
+export const errorFormat = z.array(z.union([error, validationError]));
 
 export type ErrorFormat = z.infer<typeof errorFormat>;
 
 export function formatZodErrors(zodError: z.ZodError): ErrorFormat {
-  const errors = zodError.errors.map((issue): ValidationError => {
-    return {
-      title: issue.message,
-      detail: issue.code,
-      source: {
-        pointer: `/${issue.path.join("/")}`,
-      },
-    };
-  });
+  const errors = zodError.errors.map((issue): ValidationError => ({
+    title: issue.message,
+    detail: issue.code,
+    source: {
+      pointer: `/${issue.path.join("/")}`,
+    },
+  }));
 
-  return {
-    errors,
-  };
+  return errors;
 }

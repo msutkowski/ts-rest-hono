@@ -20,6 +20,9 @@ import type { Context, Env as HonoEnv, Hono, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
 import { z } from "zod";
+import { RequestValidationError } from "./request-validation-error";
+import { combinedRequestValidationErrorHandler } from "./validate-request";
+import { validateRequest } from "./validate-request";
 
 export function getValue<
   TData,
@@ -92,7 +95,11 @@ export type Options<E extends HonoEnv = HonoEnv> = {
   jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
   responseValidation?: boolean | ((c: Context<E, any>) => boolean);
   errorHandler?: (error: unknown, context?: Context<E, any>) => void;
-  zodErrorHandler?: (error: z.ZodError<any>) => {
+  requestValidationErrorHandler?: (error: RequestValidationError) => {
+    error: unknown;
+    status: StatusCode;
+  };
+  responseValidationErrorHandler?: (error: z.ZodError<any>) => {
     error: unknown;
     status: StatusCode;
   };
@@ -128,7 +135,10 @@ const recursivelyApplyHonoRouter = (
   }
 };
 
-function resolveOption(option: ResolvableOption, c: Context<any> = {} as any) {
+export function resolveOption(
+  option: ResolvableOption,
+  c: Context<any> = {} as any
+) {
   return typeof option === "function" ? option(c) : option;
 }
 
@@ -177,41 +187,22 @@ const transformAppRouteQueryImplementation = (
   }
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
-    const isJsonQueryEnabled = resolveOption(options.jsonQuery, c);
-    const query = isJsonQueryEnabled
-      ? parseJsonQueryObject(c.req.query() as any as Record<string, string>)
-      : c.req.query();
-
-    const finalQuery = maybeTransformQueryFromSchema(schema, query, c);
-
-    const queryResult = checkZodSchema(finalQuery, schema.query);
-
-    if (!queryResult.success) {
-      if (options.zodErrorHandler) {
-        const { error, status } = options.zodErrorHandler(queryResult.error);
-        return c.json(error, status);
-      }
-      return c.json(queryResult.error, 400);
-    }
-
-    const paramsResult = checkZodSchema(c.req.param(), schema.pathParams, {
-      passThroughExtraKeys: true,
-    });
-
-    if (!paramsResult.success) {
-      if (options.zodErrorHandler) {
-        const { error, status } = options.zodErrorHandler(paramsResult.error);
-        return c.json(error, status);
-      }
-      return c.json(paramsResult.error, 400);
+    const validationResult = validateRequest(c, schema, options);
+    if (validationResult instanceof RequestValidationError) {
+      const { error, status } = (
+        options.requestValidationErrorHandler ??
+        combinedRequestValidationErrorHandler
+      )(validationResult);
+      return c.json(error, status);
     }
 
     try {
+      const { headers, params, query } = validationResult;
       const result = await route(
         {
-          params: paramsResult.data as any,
-          query: queryResult.data as any,
-          headers: c.req.header() as any,
+          params: params as any,
+          query: query as any,
+          headers: headers as any,
           req: c.req.raw as any,
         },
         c
@@ -237,8 +228,9 @@ const transformAppRouteQueryImplementation = (
           return c.json(response.body, statusCode);
         } catch (err) {
           if (err instanceof z.ZodError) {
-            if (options.zodErrorHandler) {
-              const { error, status } = options.zodErrorHandler(err);
+            if (options.responseValidationErrorHandler) {
+              const { error, status } =
+                options.responseValidationErrorHandler(err);
               return c.json(error, status);
             }
           }
@@ -274,51 +266,23 @@ const transformAppRouteMutationImplementation = (
   const method = schema.method;
 
   const reqHandler = async (c: Context, next: Next) => {
-    const query = resolveOption(options.jsonQuery, c)
-      ? parseJsonQueryObject(c.req.query())
-      : c.req.query();
-
-    const finalQuery = maybeTransformQueryFromSchema(schema, query, c);
-
-    const queryResult = checkZodSchema(finalQuery, schema.query);
-
-    if (!queryResult.success) {
-      if (options.zodErrorHandler) {
-        const { error, status } = options.zodErrorHandler(queryResult.error);
-        return c.json(error, status);
-      }
-      return c.json(queryResult.error, 400);
-    }
-
-    const bodyResult = checkZodSchema(await c.req.json(), schema.body);
-
-    if (!bodyResult.success) {
-      if (options.zodErrorHandler) {
-        const { error, status } = options.zodErrorHandler(bodyResult.error);
-        return c.json(error, status);
-      }
-      return c.json(bodyResult.error, 400);
-    }
-
-    const paramsResult = checkZodSchema(c.req.param(), schema.pathParams, {
-      passThroughExtraKeys: true,
-    });
-
-    if (!paramsResult.success) {
-      if (options.zodErrorHandler) {
-        const { error, status } = options.zodErrorHandler(paramsResult.error);
-        return c.json(error, status);
-      }
-      return c.json(paramsResult.error, 400);
+    const validationResult = validateRequest(c, schema, options);
+    if (validationResult instanceof RequestValidationError) {
+      const { error, status } = (
+        options.requestValidationErrorHandler ??
+        combinedRequestValidationErrorHandler
+      )(validationResult);
+      return c.json(error, status);
     }
 
     try {
+      const { headers, params, query, body } = validationResult;
       const result = await route(
         {
-          params: paramsResult.data as any,
-          body: bodyResult.data,
-          query: queryResult.data,
-          headers: c.req.header(),
+          params: params as any,
+          body: body as any,
+          query: query as any,
+          headers: headers as any,
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           files: c.req.files, // TODO: map this?
@@ -350,8 +314,9 @@ const transformAppRouteMutationImplementation = (
           return c.json(response.body, statusCode);
         } catch (err) {
           if (err instanceof z.ZodError) {
-            if (options.zodErrorHandler) {
-              const { error, status } = options.zodErrorHandler(err);
+            if (options.responseValidationErrorHandler) {
+              const { error, status } =
+                options.responseValidationErrorHandler(err);
               return c.json(error, status);
             }
           }

@@ -118,16 +118,57 @@ describe("Wrangler", () => {
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
-        "errors": [
-          {
-            "detail": "invalid_type",
-            "source": {
-              "pointer": "/data",
+        "errors": {
+          "body": [
+            {
+              "detail": "invalid_type",
+              "source": {
+                "pointer": "/data",
+              },
+              "title": "Required",
             },
-            "title": "Required",
-          },
-        ],
+          ],
+          "headers": null,
+          "pathParams": null,
+          "query": null,
+        },
       }
     `);
+  });
+
+  describe("validate headers schema in contract", async () => {
+    it("should work for correct headers", async () => {
+      await setupWorker();
+
+      const res = await worker.fetch("/headers", {
+        headers: { "x-thing": "thing" },
+      });
+      expect.soft(res.status).toBe(200);
+      expect(await res.text()).toBe("\"ok\"");
+    });
+    it("should fail if headers aren't given", async () => {
+      await setupWorker();
+
+      const res = await worker.fetch("/headers")
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchInlineSnapshot(`
+        {
+          "errors": {
+            "body": null,
+            "headers": [
+              {
+                "detail": "invalid_type",
+                "source": {
+                  "pointer": "/x-thing",
+                },
+                "title": "Required",
+              },
+            ],
+            "pathParams": null,
+            "query": null,
+          },
+        }
+      `);
+    })
   });
 });
