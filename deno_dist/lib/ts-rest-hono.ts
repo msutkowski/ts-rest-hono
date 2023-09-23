@@ -15,14 +15,14 @@ import {
   validateResponse,
   Without,
   ZodInferOrType,
-} from "@ts-rest/core";
-import type { Context, Env as HonoEnv, Hono, Next } from "hono";
-import { StatusCode } from "hono/utils/http-status";
-import type { IncomingHttpHeaders } from "http";
-import { z } from "zod";
-import { RequestValidationError } from "./request-validation-error";
-import { combinedRequestValidationErrorHandler } from "./validate-request";
-import { validateRequest } from "./validate-request";
+} from "npm:@ts-rest/core@3.27.0";
+import type { Context, Env as HonoEnv, Hono, Next } from "https://deno.land/x/hono@v3.4.0/mod.ts";
+import { StatusCode } from "https://deno.land/x/hono@v3.4.0/utils/http-status.ts";
+import type { IncomingHttpHeaders } from "node:http";
+import { z } from "https://deno.land/x/zod@v3.21.4/mod.ts";
+import { RequestValidationError } from "./request-validation-error.ts";
+import { combinedRequestValidationErrorHandler } from "./validate-request.ts";
+import { validateRequest } from "./validate-request.ts";
 
 export function getValue<
   TData,

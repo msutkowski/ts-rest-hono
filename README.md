@@ -144,3 +144,5 @@ try {
     <p align="center">Finally just run <code>app.ts</code></p>
     <p align="center">It's that easy! Enjoy your ultra-fast typesafe API 🔥🚀</p>
 </p>
+
+Deno is also supported at [deno_dist](./deno_dist/).
