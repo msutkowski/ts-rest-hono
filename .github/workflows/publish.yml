@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18.16.1
+          registry-url: "https://registry.npmjs.org"
 
       - uses: pnpm/action-setup@v2
         with:
