@@ -90,6 +90,24 @@ describe("Wrangler", () => {
     `);
   });
 
+  it("should let a handler synchronously return", async () => {
+    await setupWorker();
+
+    const res = await worker.fetch("/sync");
+    const json = await res.json();
+
+    expect(json).toMatchInlineSnapshot(`
+      {
+        "auth_token": "lul",
+        "env": {
+          "ENABLE_RESPONSE_VALIDATION": "true",
+        },
+        "id": "sync",
+        "status": "ok",
+      }
+    `);
+  });
+
   it("should let a handler early return from a c.json() call", async () => {
     await setupWorker();
 
@@ -144,12 +162,12 @@ describe("Wrangler", () => {
         headers: { "x-thing": "thing" },
       });
       expect.soft(res.status).toBe(200);
-      expect(await res.text()).toBe("\"ok\"");
+      expect(await res.text()).toBe('"ok"');
     });
     it("should fail if headers aren't given", async () => {
       await setupWorker();
 
-      const res = await worker.fetch("/headers")
+      const res = await worker.fetch("/headers");
       expect(res.status).toBe(400);
       expect(await res.json()).toMatchInlineSnapshot(`
         {
@@ -169,6 +187,6 @@ describe("Wrangler", () => {
           },
         }
       `);
-    })
+    });
   });
 });
