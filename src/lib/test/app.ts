@@ -48,6 +48,19 @@ export const router = c.router({
       }),
     },
   },
+  getSyncReturn: {
+    method: "GET",
+    path: "/sync",
+    summary: "Sometimes you don't need to wait",
+    responses: {
+      200: z.object({
+        id: z.string(),
+        env: z.any().optional(),
+        auth_token: z.string().optional(),
+        status: z.string(),
+      }),
+    },
+  },
   getEarlyReturn: {
     method: "GET",
     path: "/early",
@@ -143,6 +156,18 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
       },
     };
   },
+  getSyncReturn: (_, c) => {
+    c.set("auth_token", "lul");
+    return {
+      status: 200,
+      body: {
+        id: "sync",
+        env: c.env,
+        auth_token: c.get("auth_token"),
+        status: "ok",
+      },
+    };
+  },
   getEarlyReturn: (_, c) => {
     c.set("auth_token", "lul");
     return c.json({
@@ -165,7 +190,7 @@ const handlers = server.router(router, args);
 createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
   responseValidation(c) {
-    return c.env.ENABLE_RESPONSE_VALIDATION
+    return c.env.ENABLE_RESPONSE_VALIDATION;
   },
   requestValidationErrorHandler: ({ body, headers, query, pathParams }) => ({
     error: {

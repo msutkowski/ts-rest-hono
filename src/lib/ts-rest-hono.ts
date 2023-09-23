@@ -4,12 +4,10 @@ import {
   AppRouteMutation,
   AppRouteQuery,
   AppRouter,
-  checkZodSchema,
   extractZodObjectShape,
   GetFieldType,
   isAppRoute,
   isZodObject,
-  parseJsonQueryObject,
   ServerInferRequest,
   ServerInferResponses,
   validateResponse,
@@ -44,6 +42,10 @@ export function getValue<
   return value !== undefined ? value : (defaultValue as TDefault);
 }
 
+export type AppRouteImplementationReturn<
+  T extends AppRouteQuery | AppRouteMutation
+> = Promise<ServerInferResponses<T>> | ServerInferResponses<T> | Response;
+
 type AppRouteInput<T extends AppRoute> = ServerInferRequest<
   T,
   IncomingHttpHeaders
@@ -55,7 +57,7 @@ type AppRouteQueryImplementation<
 > = (
   input: AppRouteInput<T>,
   context: Context<Env, any>
-) => Promise<ServerInferResponses<T>> | Response;
+) => AppRouteImplementationReturn<T>;
 
 type WithoutFileIfMultiPart<T extends AppRouteMutation> =
   T["contentType"] extends "multipart/form-data"
@@ -71,7 +73,7 @@ type AppRouteMutationImplementation<
     file: unknown;
   },
   context: Context<Env, any>
-) => Promise<ServerInferResponses<T>> | Response;
+) => AppRouteImplementationReturn<T>;
 
 export type AppRouteImplementation<
   T extends AppRoute,
