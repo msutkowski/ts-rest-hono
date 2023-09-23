@@ -1,13 +1,10 @@
-name: ci
+name: Publish
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: ["*"]
+  release:
+    types: [released]
 
 jobs:
-  ci:
-    name: "Main"
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -32,4 +29,11 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpm-store-
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish package on NPM 📦
+        run: pnpm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
