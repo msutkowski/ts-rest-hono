@@ -18,6 +18,10 @@ import { combinedRequestValidationErrorHandler } from "./validate-request.ts";
 import { validateRequest } from "./validate-request.ts";
 import { getValue, resolveOption } from "./utils.ts";
 
+export type WithTsRestHonoVariables<T extends any> = T & {
+  ts_rest_hono_operationId: string;
+};
+
 export type AppRouteImplementationReturn<
   T extends AppRouteQuery | AppRouteMutation
 > = Promise<ServerInferResponses<T>> | ServerInferResponses<T> | Response;
@@ -108,17 +112,25 @@ const recursivelyApplyHonoRouter = (
   }
 };
 
-const transformAppRouteQueryImplementation = (
-  route: AppRouteQueryImplementation<any, any>,
-  schema: AppRouteQuery,
-  app: Hono<any>,
-  options: Options
-) => {
+const transformAppRouteQueryImplementation = ({
+  route,
+  schema,
+  app,
+  options,
+  operationId,
+}: {
+  route: AppRouteQueryImplementation<any, any>;
+  schema: AppRouteQuery;
+  app: Hono<any>;
+  options: Options;
+  operationId: string;
+}) => {
   if (options.logInitialization) {
     console.log(`[ts-rest] Initialized ${schema.method} ${schema.path}`);
   }
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
+    c.set("ts_rest_hono_operationId", operationId);
     const validationResult = validateRequest(c, schema, options);
     if (validationResult instanceof RequestValidationError) {
       const { error, status } = (
@@ -185,12 +197,19 @@ const transformAppRouteQueryImplementation = (
   });
 };
 
-const transformAppRouteMutationImplementation = (
-  route: AppRouteMutationImplementation<any, any>,
-  schema: AppRouteMutation,
-  app: Hono<any>,
-  options: Options
-) => {
+const transformAppRouteMutationImplementation = ({
+  route,
+  schema,
+  app,
+  options,
+  operationId,
+}: {
+  route: AppRouteMutationImplementation<any, any>;
+  schema: AppRouteMutation;
+  app: Hono<any>;
+  options: Options;
+  operationId: string;
+}) => {
   if (options.logInitialization) {
     console.log(`[ts-rest] Initialized ${schema.method} ${schema.path}`);
   }
@@ -198,6 +217,8 @@ const transformAppRouteMutationImplementation = (
   const method = schema.method;
 
   const reqHandler = async (c: Context, next: Next) => {
+    c.set("ts-rest-hono-operationId", operationId);
+
     const validationResult = validateRequest(c, schema, options);
     if (validationResult instanceof RequestValidationError) {
       const { error, status } = (
@@ -307,6 +328,8 @@ export const createHonoEndpoints = <
 ) => {
   recursivelyApplyHonoRouter(router, [], (route, path) => {
     const routerViaPath = getValue(schema, path.join("."));
+    // This will be the value of the last key in the path, which is the operationId (or the name of the key of the entry in the contract)
+    const operationId = path.at(-1)!;
 
     if (!routerViaPath) {
       throw new Error(`[ts-rest] No router found for path ${path.join(".")}`);
@@ -314,19 +337,21 @@ export const createHonoEndpoints = <
 
     if (isAppRoute(routerViaPath)) {
       if (routerViaPath.method === "GET") {
-        transformAppRouteQueryImplementation(
-          route as AppRouteQueryImplementation<any, ExtractEnv<H>>,
-          routerViaPath,
+        transformAppRouteQueryImplementation({
+          route: route as AppRouteQueryImplementation<any, ExtractEnv<H>>,
+          schema: routerViaPath,
           app,
-          options as any
-        );
+          options: options as any,
+          operationId,
+        });
       } else {
-        transformAppRouteMutationImplementation(
+        transformAppRouteMutationImplementation({
           route,
-          routerViaPath,
+          schema: routerViaPath,
           app,
-          options as any
-        );
+          options: options as any,
+          operationId,
+        });
       }
     } else {
       throw new Error(
