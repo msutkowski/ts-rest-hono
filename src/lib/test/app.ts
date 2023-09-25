@@ -109,6 +109,15 @@ export const router = c.router({
       200: z.literal("ok"),
     },
   },
+  invalidResponse: {
+    method: "GET",
+    path: "/invalid-response",
+    responses: {
+      200: z.object({
+        ok: z.boolean(),
+      }),
+    },
+  },
 });
 
 export const createRouter = c.router({
@@ -186,6 +195,15 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   headersRequired: async (_, _c) => {
     return { status: 200, body: "ok" };
   },
+  // @ts-expect-error we're intentionally returning a bad response
+  invalidResponse: async () => {
+    return {
+      status: 200,
+      body: {
+        ok: "notaboolean",
+      },
+    };
+  },
 };
 
 const handlers = server.router(router, args);
@@ -206,10 +224,14 @@ createHonoEndpoints(router, handlers, app, {
     },
     status: 400,
   }),
-  responseValidationErrorHandler: (error) => ({
-    error: formatZodErrors(error),
-    status: 400,
-  }),
+  responseValidationErrorHandler: (error) => {
+    return {
+      error: {
+        errors: formatZodErrors(error.cause),
+      },
+      status: 400,
+    };
+  },
 });
 
 app.onError((err, c) => {

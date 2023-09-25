@@ -190,4 +190,27 @@ describe("Wrangler", () => {
       `);
     });
   });
+
+  describe("responseValidation", () => {
+    it("should return validation errors when enabled and the response type is invalid", async () => {
+      await setupWorker();
+
+      const res = await worker.fetch("/invalid-response");
+      const json = await res.json();
+
+      expect(json).toMatchInlineSnapshot(`
+        {
+          "errors": [
+            {
+              "detail": "invalid_type",
+              "source": {
+                "pointer": "/ok",
+              },
+              "title": "Expected boolean, received string",
+            },
+          ],
+        }
+      `);
+    });
+  });
 });

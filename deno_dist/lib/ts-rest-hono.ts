@@ -5,18 +5,20 @@ import {
   AppRouteQuery,
   AppRouter,
   isAppRoute,
+  ResponseValidationError,
   ServerInferRequest,
   ServerInferResponses,
   validateResponse,
 } from "npm:@ts-rest/core@3.27.0";
-import type { Context, Env as HonoEnv, Hono, Next } from "https://deno.land/x/hono@v3.4.0/mod.ts";
+import type { Context, Hono, Env as HonoEnv, Next } from "https://deno.land/x/hono@v3.4.0/mod.ts";
 import { StatusCode } from "https://deno.land/x/hono@v3.4.0/utils/http-status.ts";
 import type { IncomingHttpHeaders } from "node:http";
-import { z } from "https://deno.land/x/zod@v3.21.4/mod.ts";
 import { RequestValidationError } from "./request-validation-error.ts";
-import { combinedRequestValidationErrorHandler } from "./validate-request.ts";
-import { validateRequest } from "./validate-request.ts";
 import { getValue, resolveOption } from "./utils.ts";
+import {
+  combinedRequestValidationErrorHandler,
+  validateRequest,
+} from "./validate-request.ts";
 
 export type WithTsRestHonoVariables<
   T extends Record<string, unknown> = Record<string, unknown>
@@ -78,7 +80,7 @@ export type Options<E extends HonoEnv = HonoEnv> = {
     error: unknown;
     status: StatusCode;
   };
-  responseValidationErrorHandler?: (error: z.ZodError<any>) => {
+  responseValidationErrorHandler?: (error: ResponseValidationError) => {
     error: unknown;
     status: StatusCode;
   };
@@ -173,7 +175,7 @@ const transformAppRouteQueryImplementation = ({
 
           return c.json(response.body, statusCode);
         } catch (err) {
-          if (err instanceof z.ZodError) {
+          if (err instanceof ResponseValidationError) {
             if (options.responseValidationErrorHandler) {
               const { error, status } =
                 options.responseValidationErrorHandler(err);
@@ -268,12 +270,14 @@ const transformAppRouteMutationImplementation = ({
 
           return c.json(response.body, statusCode);
         } catch (err) {
-          if (err instanceof z.ZodError) {
+          if (err instanceof ResponseValidationError) {
             if (options.responseValidationErrorHandler) {
               const { error, status } =
                 options.responseValidationErrorHandler(err);
               return c.json(error, status);
             }
+
+            return c.json(err.cause, 400);
           }
 
           return c.json(err, 400);
