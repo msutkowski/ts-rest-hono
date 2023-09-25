@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.2.1...ts-rest-hono-v0.3.0) (2023-09-25)
+
+
+### Features
+
+* Set operationId in the env variables ([#19](https://github.com/msutkowski/ts-rest-hono/issues/19)) ([a2752e6](https://github.com/msutkowski/ts-rest-hono/commit/a2752e61436275178d7c38cf1f0909b067587187))
+
 ## [0.2.1](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.2.0...ts-rest-hono-v0.2.1) (2023-09-23)
 
 
