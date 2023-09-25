@@ -5,18 +5,20 @@ import {
   AppRouteQuery,
   AppRouter,
   isAppRoute,
+  ResponseValidationError,
   ServerInferRequest,
   ServerInferResponses,
   validateResponse,
 } from "@ts-rest/core";
-import type { Context, Env as HonoEnv, Hono, Next } from "hono";
+import type { Context, Hono, Env as HonoEnv, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
 import type { IncomingHttpHeaders } from "http";
-import { z } from "zod";
 import { RequestValidationError } from "./request-validation-error";
-import { combinedRequestValidationErrorHandler } from "./validate-request";
-import { validateRequest } from "./validate-request";
 import { getValue, resolveOption } from "./utils";
+import {
+  combinedRequestValidationErrorHandler,
+  validateRequest,
+} from "./validate-request";
 
 export type WithTsRestHonoVariables<
   T extends Record<string, unknown> = Record<string, unknown>
@@ -78,7 +80,7 @@ export type Options<E extends HonoEnv = HonoEnv> = {
     error: unknown;
     status: StatusCode;
   };
-  responseValidationErrorHandler?: (error: z.ZodError<any>) => {
+  responseValidationErrorHandler?: (error: ResponseValidationError) => {
     error: unknown;
     status: StatusCode;
   };
@@ -173,7 +175,7 @@ const transformAppRouteQueryImplementation = ({
 
           return c.json(response.body, statusCode);
         } catch (err) {
-          if (err instanceof z.ZodError) {
+          if (err instanceof ResponseValidationError) {
             if (options.responseValidationErrorHandler) {
               const { error, status } =
                 options.responseValidationErrorHandler(err);
@@ -268,12 +270,14 @@ const transformAppRouteMutationImplementation = ({
 
           return c.json(response.body, statusCode);
         } catch (err) {
-          if (err instanceof z.ZodError) {
+          if (err instanceof ResponseValidationError) {
             if (options.responseValidationErrorHandler) {
               const { error, status } =
                 options.responseValidationErrorHandler(err);
               return c.json(error, status);
             }
+
+            return c.json(err.cause, 400);
           }
 
           return c.json(err, 400);
