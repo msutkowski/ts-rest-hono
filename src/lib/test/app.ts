@@ -195,11 +195,12 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   headersRequired: async (_, _c) => {
     return { status: 200, body: "ok" };
   },
+  // @ts-expect-error we're intentionally returning a bad response
   invalidResponse: async () => {
     return {
       status: 200,
       body: {
-        ok: "notaboolean" as any,
+        ok: "notaboolean",
       },
     };
   },
