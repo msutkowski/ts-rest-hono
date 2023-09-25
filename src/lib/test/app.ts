@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import {
   createHonoEndpoints,
   initServer,
+  type WithTsRestHonoVariables,
   type RecursiveRouterObj,
 } from "../ts-rest-hono";
 import { initContract } from "@ts-rest/core";
@@ -12,10 +13,9 @@ import { formatZodErrors } from "./format-errors";
 export type Bindings = {
   ENABLE_RESPONSE_VALIDATION: boolean;
 };
-export type Variables = {
+export type Variables = WithTsRestHonoVariables<{
   auth_token?: string;
-  ts_rest_hono_operationId: string;
-};
+}>;
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
 const app = new Hono<HonoEnv>();
