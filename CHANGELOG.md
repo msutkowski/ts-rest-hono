@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.0...ts-rest-hono-v0.3.1) (2023-09-25)
+
+
+### Bug Fixes
+
+* ResponseValidationErrorHandler guards with the right class ([#21](https://github.com/msutkowski/ts-rest-hono/issues/21)) ([2a8740e](https://github.com/msutkowski/ts-rest-hono/commit/2a8740e81ded035585de1637f07686db3501b80d))
+
 ## [0.3.0](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.2.1...ts-rest-hono-v0.3.0) (2023-09-25)
 
 
