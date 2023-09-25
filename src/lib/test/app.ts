@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import {
   createHonoEndpoints,
   initServer,
+  type WithTsRestHonoVariables,
   type RecursiveRouterObj,
 } from "../ts-rest-hono";
 import { initContract } from "@ts-rest/core";
@@ -12,9 +13,9 @@ import { formatZodErrors } from "./format-errors";
 export type Bindings = {
   ENABLE_RESPONSE_VALIDATION: boolean;
 };
-export type Variables = {
+export type Variables = WithTsRestHonoVariables<{
   auth_token?: string;
-};
+}>;
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
 const app = new Hono<HonoEnv>();
@@ -40,6 +41,7 @@ export const router = c.router({
         id: z.string(),
         env: z.any().optional(),
         auth_token: z.string().optional(),
+        operationId: z.string(),
         status: z.string(),
         validatedQueryParams: z.any().optional(),
         rawQuery: z.any().optional(),
@@ -148,6 +150,7 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
         id,
         env: c.env,
         auth_token,
+        operationId: c.get("ts_rest_hono_operationId"),
         status: "ok",
         validatedQueryParams: query,
         rawQuery: c.req.query(),
@@ -177,10 +180,10 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
       status: "ok",
     });
   },
-  createThing: async (_, c) => {
+  createThing: async (_, _c) => {
     return { status: 200, body: { ok: true } };
   },
-  headersRequired: async (_, c) => {
+  headersRequired: async (_, _c) => {
     return { status: 200, body: "ok" };
   },
 };

@@ -41,6 +41,7 @@ describe("Wrangler", () => {
           "ENABLE_RESPONSE_VALIDATION": "true",
         },
         "id": "12",
+        "operationId": "getThing",
         "pathParams": {
           "id": "12",
         },
