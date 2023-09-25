@@ -18,7 +18,7 @@ import { combinedRequestValidationErrorHandler } from "./validate-request";
 import { validateRequest } from "./validate-request";
 import { getValue, resolveOption } from "./utils";
 
-export type WithTsRestHonoVariables<T extends any> = T & {
+export type WithTsRestHonoVariables<T extends Record<string, unknown>> = T & {
   ts_rest_hono_operationId: string;
 };
 
