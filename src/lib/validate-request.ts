@@ -41,7 +41,6 @@ export const validateRequest = async (
     Boolean(schema.body) &&
     isJsonContentType(c.req.header("content-type"));
 
-  // We only check the body if its not a GET request
   const bodyResult = shouldValidateBody
     ? checkZodSchema(await c.req.json(), schema.body)
     : { success: true, error: null, data: null };
