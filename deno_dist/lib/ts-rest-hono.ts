@@ -135,7 +135,7 @@ const transformAppRouteQueryImplementation = ({
 
   app.get(schema.path, async (c: Context<any>, next: Next) => {
     c.set("ts_rest_hono_operationId", operationId);
-    const validationResult = validateRequest(c, schema, options);
+    const validationResult = await validateRequest(c, schema, options);
     if (validationResult instanceof RequestValidationError) {
       const { error, status } = (
         options.requestValidationErrorHandler ??
@@ -223,7 +223,7 @@ const transformAppRouteMutationImplementation = ({
   const reqHandler = async (c: Context, next: Next) => {
     c.set("ts-rest-hono-operationId", operationId);
 
-    const validationResult = validateRequest(c, schema, options);
+    const validationResult = await validateRequest(c, schema, options);
     if (validationResult instanceof RequestValidationError) {
       const { error, status } = (
         options.requestValidationErrorHandler ??

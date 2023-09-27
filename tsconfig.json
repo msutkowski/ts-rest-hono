@@ -9,8 +9,7 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "types": ["@cloudflare/workers-types", "vitest"]
+    "noFallthroughCasesInSwitch": true
   },
   "files": [],
   "include": [],
