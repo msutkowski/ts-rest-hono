@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.1...ts-rest-hono-v0.3.2) (2023-09-27)
+
+
+### Bug Fixes
+
+* Only parse bodies when necessary, switch test implementation ([#23](https://github.com/msutkowski/ts-rest-hono/issues/23)) ([0906776](https://github.com/msutkowski/ts-rest-hono/commit/0906776c4025b6454762b26c5f3284e00873f80a))
+
 ## [0.3.1](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.0...ts-rest-hono-v0.3.1) (2023-09-25)
 
 
