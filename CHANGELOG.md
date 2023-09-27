@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.2...ts-rest-hono-v0.3.3) (2023-09-27)
+
+
+### Bug Fixes
+
+* Handle unset content-type headers ([3446243](https://github.com/msutkowski/ts-rest-hono/commit/3446243a39b0f7ecb242ffbc0a7d21bddca0e73a))
+
 ## [0.3.2](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.1...ts-rest-hono-v0.3.2) (2023-09-27)
 
 
