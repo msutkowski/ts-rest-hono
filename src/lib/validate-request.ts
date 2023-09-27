@@ -36,13 +36,30 @@ export const validateRequest = async (
     passThroughExtraKeys: true,
   });
 
-  const shouldValidateBody =
-    "body" in schema &&
-    Boolean(schema.body) &&
-    isJsonContentType(c.req.header("content-type"));
+  let content;
+  let shouldValidateBody = false;
+
+  const hasBodySchema = "body" in schema && Boolean(schema.body);
+
+  if (hasBodySchema) {
+    if (isJsonContentType(c.req.header("content-type"))) {
+      shouldValidateBody = true;
+      content = await c.req.json();
+    } else {
+      const text = await c.req.text();
+      try {
+        content = JSON.parse(text);
+        shouldValidateBody = true;
+      } catch (err) {
+        throw new Error(
+          "Error parsing the body contents. Please set the content-type header."
+        );
+      }
+    }
+  }
 
   const bodyResult = shouldValidateBody
-    ? checkZodSchema(await c.req.json(), schema.body)
+    ? checkZodSchema(content, hasBodySchema && schema.body)
     : { success: true, error: null, data: null };
 
   if (

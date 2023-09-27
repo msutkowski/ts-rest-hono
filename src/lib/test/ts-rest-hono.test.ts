@@ -220,6 +220,39 @@ describe("tests", () => {
         }
       `);
     });
+    it("should return coerce a json body without the right content type set", async () => {
+      const res = await app.request("/things", {
+        method: "POST",
+        // intentionally not setting content-type
+        // headers: {
+        //   "content-type": "application/json",
+        // },
+        body: JSON.stringify({ data: [{ name: "banana", other: 123 }] }),
+      });
+
+      expect(res.status).toBe(200);
+    });
+
+    it("should error when the content type is not set and it's not parseable as json", async () => {
+      const res = await app.request("/things", {
+        method: "POST",
+        // intentionally not setting content-type
+        // headers: {
+        //   "content-type": "application/json",
+        // },
+        body: "bad: data",
+      });
+
+      const json = await res.json();
+
+      expect(json).toMatchInlineSnapshot(`
+        {
+          "message": "Error parsing the body contents. Please set the content-type header.",
+        }
+      `);
+
+      expect(res.status).toBe(500);
+    });
     it("should allow a delete request to go through", async () => {
       const res = await app.request("/things/1", {
         method: "DELETE",
