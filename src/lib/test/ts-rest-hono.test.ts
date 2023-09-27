@@ -1,45 +1,18 @@
-import { it, expect, describe, afterAll } from "vitest";
-import type { UnstableDevOptions } from "wrangler";
+import { it, expect, describe } from "vitest";
 
-import { unstable_dev } from "wrangler";
-import type { UnstableDevWorker } from "wrangler";
+import app from "./app";
 
-let worker: UnstableDevWorker;
+// Note: app.request doesn't support injected the execution context, so we're not testing that behavior. we can trust that it "Just works"
+// or we can rewrite using app.fetch and hooking up the miniflare bindings.
 
-const setupWorker = async (options: UnstableDevOptions = {}) => {
-  worker = await unstable_dev(__dirname + "/app.ts", {
-    ...options,
-    vars: {
-      ENABLE_RESPONSE_VALIDATION: "true",
-      ...options.vars,
-    },
-    logLevel: "log",
-    experimental: {
-      disableExperimentalWarning: true,
-      ...options.experimental,
-    },
-  });
-};
-
-describe("Wrangler", () => {
-  afterAll(async () => {
-    await worker.stop();
-  });
-
+describe("tests", () => {
   it("should return things", async () => {
-    await setupWorker();
-
-    const res = await worker.fetch(
-      encodeURI(
-        "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
-      )
+    const res = await app.request(
+      "/things/12?array=1&array=2&snake_case=a&camelCase=b&kebab-case=c&not_array=1&array_brackets[]=1&array_brackets[]=2"
     );
     expect.soft(res.status).toBe(200);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
-        "env": {
-          "ENABLE_RESPONSE_VALIDATION": "true",
-        },
         "id": "12",
         "operationId": "getThing",
         "pathParams": {
@@ -92,17 +65,12 @@ describe("Wrangler", () => {
   });
 
   it("should let a handler synchronously return", async () => {
-    await setupWorker();
-
-    const res = await worker.fetch("/sync");
+    const res = await app.request("/sync");
     const json = await res.json();
 
     expect(json).toMatchInlineSnapshot(`
       {
         "auth_token": "lul",
-        "env": {
-          "ENABLE_RESPONSE_VALIDATION": "true",
-        },
         "id": "sync",
         "status": "ok",
       }
@@ -110,17 +78,12 @@ describe("Wrangler", () => {
   });
 
   it("should let a handler early return from a c.json() call", async () => {
-    await setupWorker();
-
-    const res = await worker.fetch("/early");
+    const res = await app.request("/early");
     const json = await res.json();
 
     expect(json).toMatchInlineSnapshot(`
       {
         "auth_token": "lul",
-        "env": {
-          "ENABLE_RESPONSE_VALIDATION": "true",
-        },
         "id": "early",
         "status": "ok",
       }
@@ -128,12 +91,14 @@ describe("Wrangler", () => {
   });
 
   it("should support zodErrorTransformer", async () => {
-    await setupWorker();
-
-    const res = await worker.fetch("/things", {
+    const res = await app.request("/things", {
       method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ bad: "key" }),
     });
+
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchInlineSnapshot(`
       {
@@ -151,24 +116,21 @@ describe("Wrangler", () => {
           "pathParams": null,
           "query": null,
         },
-      }
+      } 
     `);
   });
 
   describe("validate headers schema in contract", async () => {
     it("should work for correct headers", async () => {
-      await setupWorker();
-
-      const res = await worker.fetch("/headers", {
+      const res = await app.request("/headers", {
         headers: { "x-thing": "thing" },
       });
+
       expect.soft(res.status).toBe(200);
       expect(await res.text()).toBe('"ok"');
     });
     it("should fail if headers aren't given", async () => {
-      await setupWorker();
-
-      const res = await worker.fetch("/headers");
+      const res = await app.request("/headers");
       expect(res.status).toBe(400);
       expect(await res.json()).toMatchInlineSnapshot(`
         {
@@ -191,11 +153,85 @@ describe("Wrangler", () => {
     });
   });
 
+  describe("requests", () => {
+    it("should return validation errors when the request payload is wrong and missing a parent key", async () => {
+      const res = await app.request("/things", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ bad: "should've been data key" }),
+      });
+
+      const json = await res.json();
+
+      expect(json).toMatchInlineSnapshot(`
+        {
+          "errors": {
+            "body": [
+              {
+                "detail": "invalid_type",
+                "source": {
+                  "pointer": "/data",
+                },
+                "title": "Required",
+              },
+            ],
+            "headers": null,
+            "pathParams": null,
+            "query": null,
+          },
+        }
+      `);
+    });
+    it("should return validation errors when the request payload is wrong", async () => {
+      const res = await app.request("/things", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ data: [{ invalid_key: "banana" }] }),
+      });
+      const json = await res.json();
+
+      expect(json).toMatchInlineSnapshot(`
+        {
+          "errors": {
+            "body": [
+              {
+                "detail": "invalid_type",
+                "source": {
+                  "pointer": "/data/0/name",
+                },
+                "title": "Required",
+              },
+              {
+                "detail": "invalid_type",
+                "source": {
+                  "pointer": "/data/0/other",
+                },
+                "title": "Required",
+              },
+            ],
+            "headers": null,
+            "pathParams": null,
+            "query": null,
+          },
+        }
+      `);
+    });
+    it("should allow a delete request to go through", async () => {
+      const res = await app.request("/things/1", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe("responseValidation", () => {
     it("should return validation errors when enabled and the response type is invalid", async () => {
-      await setupWorker();
-
-      const res = await worker.fetch("/invalid-response");
+      const res = await app.request("/invalid-response");
       const json = await res.json();
 
       expect(json).toMatchInlineSnapshot(`

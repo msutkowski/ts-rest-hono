@@ -69,3 +69,6 @@ export function maybeTransformQueryFromSchema(
 
   return result;
 }
+
+export const isJsonContentType = (contentType = "") =>
+  /*applicat*/ /ion\/(vnd\.api\+)?json/.test(contentType);

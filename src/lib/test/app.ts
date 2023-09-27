@@ -27,6 +27,15 @@ const c = initContract();
 const server = initServer<HonoEnv>();
 
 export const router = c.router({
+  deleteThing: {
+    method: "DELETE",
+    path: "/things/:id",
+    summary: "Delete a thing",
+    body: null,
+    responses: {
+      200: null,
+    },
+  },
   getThing: {
     method: "GET",
     path: "/things/:id",
@@ -47,6 +56,29 @@ export const router = c.router({
         rawQuery: z.any().optional(),
         rawQueries: z.any().optional(),
         pathParams: z.any().optional(),
+      }),
+    },
+  },
+
+  createThing: {
+    method: "POST",
+    path: "/things",
+    summary: "Create a thing",
+    body: z.object({
+      data: z.array(
+        z.object({
+          name: z.string(),
+          other: z.number(),
+        })
+      ),
+    }),
+    responses: {
+      200: z.object({
+        ok: z.boolean(),
+      }),
+      400: z.object({
+        message: z.string(),
+        banana: z.string(),
       }),
     },
   },
@@ -76,28 +108,7 @@ export const router = c.router({
       }),
     },
   },
-  createThing: {
-    method: "POST",
-    path: "/things",
-    summary: "Create a thing",
-    body: z.object({
-      data: z.array(
-        z.object({
-          name: z.string(),
-          other: z.number(),
-        })
-      ),
-    }),
-    responses: {
-      200: z.object({
-        ok: z.boolean(),
-      }),
-      400: z.object({
-        message: z.string(),
-        banana: z.string(),
-      }),
-    },
-  },
+
   headersRequired: {
     method: "GET",
     path: "/headers",
@@ -120,35 +131,9 @@ export const router = c.router({
   },
 });
 
-export const createRouter = c.router({
-  createThing: {
-    method: "POST",
-    path: "/things",
-    summary: "Create a thing",
-    body: z.object({
-      data: z.array(
-        z.object({
-          name: z.string(),
-          other: z.number(),
-        })
-      ),
-    }),
-    responses: {
-      200: z.object({
-        ok: z.boolean(),
-      }),
-      400: z.object({
-        message: z.string(),
-        banana: z.string(),
-      }),
-    },
-  },
-});
-
 const args: RecursiveRouterObj<typeof router, HonoEnv> = {
   getThing: async ({ params: { id }, query }, c) => {
     const auth_token = c.get("auth_token");
-    console.log(c.env.ENABLE_RESPONSE_VALIDATION);
 
     c.set("auth_token", "lul");
     // @ts-expect-error
@@ -157,7 +142,6 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
       status: 200,
       body: {
         id,
-        env: c.env,
         auth_token,
         operationId: c.get("ts_rest_hono_operationId"),
         status: "ok",
@@ -204,6 +188,12 @@ const args: RecursiveRouterObj<typeof router, HonoEnv> = {
       },
     };
   },
+  deleteThing: () => {
+    return {
+      status: 200,
+      body: null,
+    };
+  },
 };
 
 const handlers = server.router(router, args);
@@ -211,7 +201,8 @@ const handlers = server.router(router, args);
 createHonoEndpoints(router, handlers, app, {
   logInitialization: true,
   responseValidation(c) {
-    return c.env.ENABLE_RESPONSE_VALIDATION;
+    // Note: this is like this due to the test environment, not necessary in realistic usage
+    return c.env?.ENABLE_RESPONSE_VALIDATION ?? true;
   },
   requestValidationErrorHandler: ({ body, headers, query, pathParams }) => ({
     error: {
@@ -240,5 +231,7 @@ app.onError((err, c) => {
   }
   return c.json({ message: err.message }, 500);
 });
+
+app.showRoutes();
 
 export default app;
