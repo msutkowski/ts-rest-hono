@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.3...ts-rest-hono-v0.3.4) (2023-10-03)
+
+
+### Bug Fixes
+
+* Set correct operationId variable name on mutations ([95d635b](https://github.com/msutkowski/ts-rest-hono/commit/95d635b091c8c1f5158a607cd62ce8ddb352066d))
+
 ## [0.3.3](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.2...ts-rest-hono-v0.3.3) (2023-09-27)
 
 
