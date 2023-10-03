@@ -221,7 +221,7 @@ const transformAppRouteMutationImplementation = ({
   const method = schema.method;
 
   const reqHandler = async (c: Context, next: Next) => {
-    c.set("ts-rest-hono-operationId", operationId);
+    c.set("ts_rest_hono_operationId", operationId);
 
     const validationResult = await validateRequest(c, schema, options);
     if (validationResult instanceof RequestValidationError) {
