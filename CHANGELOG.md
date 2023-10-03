@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.5...ts-rest-hono-v0.4.0) (2023-10-03)
+
+
+### Features
+
+* Pass through context on request/response error handlers ([27eac14](https://github.com/msutkowski/ts-rest-hono/commit/27eac14e82ac995e3195bcbe5a0220ef8436b790))
+
 ## [0.3.5](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.4...ts-rest-hono-v0.3.5) (2023-10-03)
 
 
