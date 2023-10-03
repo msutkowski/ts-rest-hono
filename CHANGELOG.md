@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.4...ts-rest-hono-v0.3.5) (2023-10-03)
+
+
+### Miscellaneous
+
+* Update deno dist ([1f3ff38](https://github.com/msutkowski/ts-rest-hono/commit/1f3ff38b97ccb703524dc8553a6d223b2d0c412e))
+
 ## [0.3.4](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.3...ts-rest-hono-v0.3.4) (2023-10-03)
 
 
