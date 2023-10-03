@@ -76,11 +76,17 @@ export type Options<E extends HonoEnv = HonoEnv> = {
   jsonQuery?: boolean | ((c: Context<E, any>) => boolean);
   responseValidation?: boolean | ((c: Context<E, any>) => boolean);
   errorHandler?: (error: unknown, context?: Context<E, any>) => void;
-  requestValidationErrorHandler?: (error: RequestValidationError) => {
+  requestValidationErrorHandler?: (
+    error: RequestValidationError,
+    c: Context<E, any>
+  ) => {
     error: unknown;
     status: StatusCode;
   };
-  responseValidationErrorHandler?: (error: ResponseValidationError) => {
+  responseValidationErrorHandler?: (
+    error: ResponseValidationError,
+    c: Context<E, any>
+  ) => {
     error: unknown;
     status: StatusCode;
   };
@@ -140,7 +146,7 @@ const transformAppRouteQueryImplementation = ({
       const { error, status } = (
         options.requestValidationErrorHandler ??
         combinedRequestValidationErrorHandler
-      )(validationResult);
+      )(validationResult, c);
       return c.json(error, status);
     }
 
@@ -177,8 +183,10 @@ const transformAppRouteQueryImplementation = ({
         } catch (err) {
           if (err instanceof ResponseValidationError) {
             if (options.responseValidationErrorHandler) {
-              const { error, status } =
-                options.responseValidationErrorHandler(err);
+              const { error, status } = options.responseValidationErrorHandler(
+                err,
+                c
+              );
               return c.json(error, status);
             }
           }
@@ -228,7 +236,7 @@ const transformAppRouteMutationImplementation = ({
       const { error, status } = (
         options.requestValidationErrorHandler ??
         combinedRequestValidationErrorHandler
-      )(validationResult);
+      )(validationResult, c);
       return c.json(error, status);
     }
 
@@ -272,8 +280,10 @@ const transformAppRouteMutationImplementation = ({
         } catch (err) {
           if (err instanceof ResponseValidationError) {
             if (options.responseValidationErrorHandler) {
-              const { error, status } =
-                options.responseValidationErrorHandler(err);
+              const { error, status } = options.responseValidationErrorHandler(
+                err,
+                c
+              );
               return c.json(error, status);
             }
 
