@@ -8,6 +8,7 @@ import {
   maybeTransformQueryFromSchema,
   resolveOption,
 } from "./utils";
+import { flattenToNested } from "./flatten-to-nested";
 
 /**
  * @throws - {@link RequestValidationError}
@@ -45,6 +46,13 @@ export const validateRequest = async (
     if (isJsonContentType(c.req.header("content-type"))) {
       shouldValidateBody = true;
       content = await c.req.json();
+    } else if (
+      ["multipart/form-data", "application/x-www-form-urlencoded"].includes(
+        c.req.raw.headers.get("content-type") || ""
+      )
+    ) {
+      content = flattenToNested(await c.req.parseBody());
+      shouldValidateBody = true;
     } else {
       const text = await c.req.text();
       try {
