@@ -12,9 +12,8 @@ import {
 } from "@ts-rest/core";
 import type { Context, Hono, Env as HonoEnv, Next } from "hono";
 import { StatusCode } from "hono/utils/http-status";
-import type { IncomingHttpHeaders } from "http";
 import { RequestValidationError } from "./request-validation-error";
-import { getValue, resolveOption } from "./utils";
+import { getValue, resolveOption, IncomingHttpHeaders } from "./utils";
 import {
   combinedRequestValidationErrorHandler,
   validateRequest,
