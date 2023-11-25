@@ -210,7 +210,7 @@ describe("tests", () => {
                 "source": {
                   "pointer": "/data/0/other",
                 },
-                "title": "Required",
+                "title": "Expected number, received nan",
               },
             ],
             "headers": null,
@@ -228,6 +228,17 @@ describe("tests", () => {
         //   "content-type": "application/json",
         // },
         body: JSON.stringify({ data: [{ name: "banana", other: 123 }] }),
+      });
+
+      expect(res.status).toBe(200);
+    });
+    it("should support application/x-www-form-urlencoded payloads", async () => {
+      const res = await app.request(encodeURI("/things"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: encodeURI("data[0][name]=banana&data[0][other]=123"),
       });
 
       expect(res.status).toBe(200);

@@ -68,7 +68,7 @@ export const router = c.router({
       data: z.array(
         z.object({
           name: z.string(),
-          other: z.number(),
+          other: z.coerce.number(),
         })
       ),
     }),
