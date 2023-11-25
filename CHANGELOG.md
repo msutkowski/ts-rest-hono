@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.4.0...ts-rest-hono-v0.5.0) (2023-11-25)
+
+
+### Features
+
+* Support urlencoded validation ([#29](https://github.com/msutkowski/ts-rest-hono/issues/29)) ([a3e96d7](https://github.com/msutkowski/ts-rest-hono/commit/a3e96d7b536c5e0856e1ed4e14d496ce0764eac9))
+
 ## [0.4.0](https://github.com/msutkowski/ts-rest-hono/compare/ts-rest-hono-v0.3.5...ts-rest-hono-v0.4.0) (2023-10-03)
 
 
